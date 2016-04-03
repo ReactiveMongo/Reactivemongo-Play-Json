@@ -2,9 +2,9 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-val buildVersion = "0.12.0-SNAPSHOT"
+val buildVersion = "0.11.11"
 
-version := buildVersion
+version := s"$buildVersion-play24"
 
 scalaVersion := "2.11.7"
 
@@ -22,7 +22,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo" % buildVersion % "provided" cross CrossVersion.binary,
-  "com.typesafe.play" %% "play-json" % "2.5.0" % "provided" cross CrossVersion.binary)
+  "com.typesafe.play" %% "play-json" % "2.4.5" % "provided" cross CrossVersion.binary)
 
 // Test
 
