@@ -32,6 +32,7 @@ import play.api.libs.json.{
   JsValue,
   Json,
   KeyPathNode,
+  OFormat,
   OWrites,
   Reads,
   RecursiveSearch,
@@ -44,6 +45,8 @@ import reactivemongo.bson.{
   BSONBoolean,
   BSONDateTime,
   BSONDocument,
+  BSONDocumentReader,
+  BSONDocumentWriter,
   BSONDouble,
   BSONInteger,
   BSONJavaScript,
@@ -79,7 +82,24 @@ object `package` extends ImplicitBSONHandlers {
 class JSONException(message: String, cause: Throwable = null)
   extends RuntimeException(message, cause)
 
-object BSONFormats extends BSONFormats
+object BSONFormats extends BSONFormats {
+  def jsonWrites[T](implicit bsonWriter: BSONDocumentWriter[T]): OWrites[T] =
+    OWrites[T] { in: T => BSONDocumentFormat.json(bsonWriter.write(in)) }
+
+  def jsonReads[T](implicit bsonReader: BSONDocumentReader[T]): Reads[T] =
+    Reads[T] {
+      case obj @ JsObject(_) => try {
+        JsSuccess(bsonReader.read(BSONDocumentFormat.bson(obj)))
+      } catch {
+        case reason: Throwable => JsError(reason.getMessage)
+      }
+
+      case in => JsError(s"Expecting JSON document: $in")
+    }
+
+  def jsonFormat[T: BSONDocumentWriter: BSONDocumentReader]: OFormat[T] =
+    OFormat(jsonReads[T], jsonWrites[T])
+}
 
 /**
  * JSON Formats for BSONValues.
@@ -121,7 +141,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   class BSONDocumentFormat(toBSON: JsValue => JsResult[BSONValue], toJSON: BSONValue => JsValue) extends PartialFormat[BSONDocument] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONDocument]] = {
-      case obj: JsObject =>
+      case obj @ JsObject(_) =>
         try {
           JsSuccess(bson(obj))
         } catch {
@@ -497,11 +517,6 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 }
 
 import play.api.libs.json.{ JsObject, JsValue }
-import reactivemongo.bson.{
-  BSONDocument,
-  BSONDocumentReader,
-  BSONDocumentWriter
-}
 
 object ImplicitBSONHandlers extends ImplicitBSONHandlers
 

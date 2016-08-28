@@ -1,6 +1,16 @@
-import play.api.libs.json.{ Json, JsNumber, JsString, JsObject, __ }
+import play.api.libs.json.{
+  Json,
+  JsNumber,
+  JsResult,
+  JsSuccess,
+  JsString,
+  JsObject,
+  OWrites,
+  Reads,
+  __
+}
 
-import reactivemongo.bson.{ BSONArray, BSONDocument }
+import reactivemongo.bson.{ BSONArray, BSONDocument, Macros }
 import reactivemongo.play.json._
 
 class JsonSpec extends org.specs2.mutable.Specification {
@@ -14,7 +24,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
     20
   )
 
-  "ReactiveMongo Plugin" should {
+  "ReactiveMongo" should {
     "convert an empty JSON and give an empty BSON doc" in {
       val json = Json.obj()
       val bson = BSONFormats.toBSON(json).get.asInstanceOf[BSONDocument]
@@ -63,8 +73,39 @@ class JsonSpec extends org.specs2.mutable.Specification {
         Json.obj("limit.low" -> 1)
       appWriter.writes(Limit(Some(1), Some(2))) mustEqual
         Json.obj("limit.low" -> 1, "limit.high" -> 2)
-      appWriter.writes(Limit(None, None)) mustEqual
-        Json.obj()
+
+      appWriter.writes(Limit(None, None)) mustEqual Json.obj()
+    }
+
+    "provides a Play JSON OWrites for T : BSONDocumentWriter" in {
+      implicit val bsonWriter = Macros.writer[Item]
+      implicit val jsonWrites: OWrites[Item] = BSONFormats.jsonWrites[Item]
+
+      Json.toJson(Item("foo", "bar", 1)) must_== Json.obj(
+        "name" -> "foo",
+        "description" -> "bar",
+        "occurrences" -> 1
+      )
+    }
+
+    "provides a Play JSON Reads for T : BSONDocumentWriter" in {
+      implicit val bsonReaders = Macros.reader[Item]
+      implicit val jsonReads: Reads[Item] = BSONFormats.jsonReads[Item]
+
+      Json.obj(
+        "name" -> "foo",
+        "description" -> "bar",
+        "occurrences" -> 1
+      ).validate[Item] must beLike[JsResult[Item]] {
+        case JsSuccess(item, _) => item must_== Item("foo", "bar", 1)
+      }
+    }
+
+    "provides a Play JSON OFormat for T" in {
+      implicit val bsonWriter = Macros.writer[Item]
+      implicit val bsonReaders = Macros.reader[Item]
+
+      BSONFormats.jsonFormat[Item] must not(throwA[Exception])
     }
   }
 }
