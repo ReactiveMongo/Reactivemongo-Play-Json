@@ -97,8 +97,8 @@ class JsonSpec extends org.specs2.mutable.Specification {
         "description" -> "bar",
         "occurrences" -> 1
       ).validate[Item] must beLike[JsResult[Item]] {
-        case JsSuccess(item, _) => item must_== Item("foo", "bar", 1)
-      }
+          case JsSuccess(item, _) => item must_== Item("foo", "bar", 1)
+        }
     }
 
     "provides a Play JSON OFormat for T" in {
