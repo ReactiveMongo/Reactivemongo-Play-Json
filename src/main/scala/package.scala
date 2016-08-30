@@ -51,6 +51,8 @@ import reactivemongo.bson.{
   BSONInteger,
   BSONJavaScript,
   BSONLong,
+  BSONMaxKey,
+  BSONMinKey,
   BSONNull,
   BSONSymbol,
   BSONObjectID,
@@ -241,7 +243,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     private object DateValue {
-      def unapply(obj: JsObject): Option[Long] = (obj \ "$date").asOpt[Long]
+      def unapply(obj: JsObject): Option[Long] =
+        (obj \ "$date").asOpt[JsValue].flatMap {
+          case n @ JsNumber(_) => n.asOpt[Long]
+          case o @ JsObject(_) => (o \ "$numberLong").asOpt[Long]
+          case _               => None
+        }
     }
   }
 
@@ -252,14 +259,22 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
       case ts: BSONTimestamp => Json.obj(
-        "$time" -> (ts.value >>> 32), "$i" -> ts.value.toInt
+        "$time" -> (ts.value >>> 32), "$i" -> ts.value.toInt,
+        "$timestamp" -> Json.obj(
+          "t" -> (ts.value >>> 32), "i" -> ts.value.toInt
+        )
       )
     }
 
     private object TimeValue {
-      def unapply(obj: JsObject): Option[(Long, Int)] = for {
+      def unapply(obj: JsObject): Option[(Long, Int)] = (for {
         time <- (obj \ "$time").asOpt[Long]
         i <- (obj \ "$i").asOpt[Int]
+      } yield (time, i)).orElse(legacy(obj))
+
+      def legacy(obj: JsObject): Option[(Long, Int)] = for {
+        time <- (obj \ "$timestamp" \ "t").asOpt[Long]
+        i <- (obj \ "$timestamp" \ "i").asOpt[Int]
       } yield (time, i)
     }
   }
@@ -304,6 +319,48 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
         if (rx.flags.isEmpty)
           Json.obj("$regex" -> rx.value)
         else Json.obj("$regex" -> rx.value, "$options" -> rx.flags)
+    }
+  }
+
+  implicit object BSONMinKeyFormat
+      extends PartialFormat[BSONMinKey.type] {
+    private object MinKey {
+      private val JsOne = JsNumber(1)
+      def unapply(obj: JsObject): Option[BSONMinKey.type] =
+        obj.value.get("$minKey") match {
+          case Some(JsOne)           => Some(BSONMinKey)
+          case Some(JsBoolean(true)) => Some(BSONMinKey)
+          case _                     => None
+        }
+    }
+
+    val partialReads: PartialFunction[JsValue, JsResult[BSONMinKey.type]] = {
+      case MinKey(bson) => JsSuccess(bson)
+    }
+
+    val partialWrites: PartialFunction[BSONValue, JsValue] = {
+      case BSONMinKey => Json.obj("$minKey" -> 1)
+    }
+  }
+
+  implicit object BSONMaxKeyFormat
+      extends PartialFormat[BSONMaxKey.type] {
+    private object MaxKey {
+      private val JsOne = JsNumber(1)
+      def unapply(obj: JsObject): Option[BSONMaxKey.type] =
+        obj.value.get("$maxKey") match {
+          case Some(JsOne)           => Some(BSONMaxKey)
+          case Some(JsBoolean(true)) => Some(BSONMaxKey)
+          case _                     => None
+        }
+    }
+
+    val partialReads: PartialFunction[JsValue, JsResult[BSONMaxKey.type]] = {
+      case MaxKey(bson) => JsSuccess(bson)
+    }
+
+    val partialWrites: PartialFunction[BSONValue, JsValue] = {
+      case BSONMaxKey => Json.obj("$maxKey" -> 1)
     }
   }
 
@@ -405,6 +462,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       orElse(BSONRegexFormat.partialReads).
       orElse(numberReads).
       orElse(BSONBooleanFormat.partialReads).
+      orElse(BSONMinKeyFormat.partialReads).
+      orElse(BSONMaxKeyFormat.partialReads).
       orElse(BSONNullFormat.partialReads).
       orElse(BSONSymbolFormat.partialReads).
       orElse(BSONArrayFormat.partialReads).
@@ -422,6 +481,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     orElse(BSONIntegerFormat.partialWrites).
     orElse(BSONLongFormat.partialWrites).
     orElse(BSONBooleanFormat.partialWrites).
+    orElse(BSONMinKeyFormat.partialWrites).
+    orElse(BSONMaxKeyFormat.partialWrites).
     orElse(BSONNullFormat.partialWrites).
     orElse(BSONStringFormat.partialWrites).
     orElse(BSONSymbolFormat.partialWrites).

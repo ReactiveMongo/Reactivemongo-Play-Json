@@ -58,11 +58,23 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
 
     "handle BSONTimestamp" in {
       val bsonTs = BSONTimestamp(6065270725701271558L)
-      val expectedJson = Json.obj("$i" -> 6, "$time" -> 1412180887L)
+      val legacyJson = Json.obj("$i" -> 6, "$time" -> 1412180887L)
+      val strictJson = Json.obj("$timestamp" -> Json.obj(
+        "i" -> 6, "t" -> 1412180887L
+      ))
+      val expectedJson = legacyJson ++ strictJson
 
       toJSON(bsonTs) must_== expectedJson and (
         Json.toJson(bsonTs) must_== expectedJson
-      )
+      ) and (
+          Json.fromJson[BSONTimestamp](legacyJson) must beLike[JsResult[_]] {
+            case JsSuccess(ts, _) => ts must_== bsonTs
+          }
+        ) and (
+            Json.fromJson[BSONTimestamp](strictJson) must beLike[JsResult[_]] {
+              case JsSuccess(ts, _) => ts must_== bsonTs
+            }
+          )
     }
 
     "handle BSONUndefined" in {
@@ -73,9 +85,36 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       )
     }
 
-    "handle BSONDateTime" in {
-      val dt = BSONDateTime(System.currentTimeMillis())
-      val jdt = Json.toJson(dt)
+    "handle BSONMinKey" in {
+      val expectedJson = Json.obj("$minKey" -> 1)
+
+      toJSON(BSONMinKey) must_== expectedJson and (
+        Json.toJson(BSONMinKey) must_== expectedJson
+      )
+    }
+
+    "handle BSONMaxKey" in {
+      val expectedJson = Json.obj("$maxKey" -> 1)
+
+      toJSON(BSONMaxKey) must_== expectedJson and (
+        Json.toJson(BSONMaxKey) must_== expectedJson
+      )
+    }
+
+    "handle BSONDateTime from strict extended syntax" in {
+      val timestamp = System.currentTimeMillis()
+      val dt = BSONDateTime(timestamp)
+      val jdt = Json.obj("$date" -> timestamp)
+
+      Json.fromJson[BSONDateTime](jdt) must beLike {
+        case JsSuccess(res, _) => res must_== dt
+      }
+    }
+
+    "handle BSONDateTime from legacy extended syntax" in {
+      val timestamp = System.currentTimeMillis()
+      val dt = BSONDateTime(timestamp)
+      val jdt = Json.obj("$date" -> Json.obj("$numberLong" -> timestamp))
 
       Json.fromJson[BSONDateTime](jdt) must beLike {
         case JsSuccess(res, _) => res must_== dt
@@ -152,7 +191,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       ok
     }
 
-    """convert JSON timestamp { "$time": 1412180887, "$i": 6 }""" in {
+    """convert legacy timestamp { "$time": 1412180887, "$i": 6 }""" in {
       val jsonTs = Json.parse("""{ "$time": 1412180887, "$i": 6 }""")
 
       Json.fromJson[BSONTimestamp](jsonTs) must beLike {
@@ -160,11 +199,35 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       }
     }
 
-    """convert JSON { "$undefined": true }""" in {
+    """convert strict timestamp { "$time": 1412180887, "$i": 6 }""" in {
+      val jsonTs = Json.parse("""{ "$timestamp": {"t":1412180887,"i":6} }""")
+
+      Json.fromJson[BSONTimestamp](jsonTs) must beLike {
+        case JsSuccess(ts, _) => ts must_== BSONTimestamp(6065270725701271558L)
+      }
+    }
+
+    """convert extended JSON { "$undefined": true }""" in {
       val jsonTs = Json.parse("""{ "$undefined": true }""")
 
       Json.fromJson[BSONUndefined.type](jsonTs) must beLike {
         case JsSuccess(ts, _) => ts must_== BSONUndefined
+      }
+    }
+
+    """convert extended JSON { "$minKey": 1 }""" in {
+      val jsonTs = Json.parse("""{ "$minKey": 1 }""")
+
+      Json.fromJson[BSONMinKey.type](jsonTs) must beLike {
+        case JsSuccess(mk, _) => mk must_== BSONMinKey
+      }
+    }
+
+    """convert extended JSON { "$maxKey": 1 }""" in {
+      val jsonTs = Json.parse("""{ "$maxKey": 1 }""")
+
+      Json.fromJson[BSONMaxKey.type](jsonTs) must beLike {
+        case JsSuccess(mk, _) => mk must_== BSONMaxKey
       }
     }
   }
