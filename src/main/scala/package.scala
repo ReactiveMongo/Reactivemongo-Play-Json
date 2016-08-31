@@ -116,13 +116,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   }
 
   implicit object BSONDoubleFormat extends PartialFormat[BSONDouble] {
+    private val jsNaN = Json.obj("$double" -> "NaN")
+
     val partialReads: PartialFunction[JsValue, JsResult[BSONDouble]] = {
       case JsNumber(f)        => JsSuccess(BSONDouble(f.toDouble))
       case DoubleValue(value) => JsSuccess(BSONDouble(value))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case double: BSONDouble => JsNumber(double.value)
+      case BSONDouble(v) if v.isNaN => jsNaN
+      case BSONDouble(v)            => JsNumber(v)
     }
 
     private object DoubleValue {
@@ -380,7 +383,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case int: BSONInteger => JsNumber(int.value)
+      case BSONInteger(i) => JsNumber(i)
     }
 
     private object IntValue {
@@ -396,7 +399,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case long: BSONLong => JsNumber(long.value)
+      case BSONLong(l) => JsNumber(l)
     }
 
     private object LongValue {

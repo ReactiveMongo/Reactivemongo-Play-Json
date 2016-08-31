@@ -1,4 +1,5 @@
 import play.api.libs.json.{
+  JsError,
   Json,
   JsNumber,
   JsResult,
@@ -10,7 +11,7 @@ import play.api.libs.json.{
   __
 }
 
-import reactivemongo.bson.{ BSONArray, BSONDocument, Macros }
+import reactivemongo.bson._
 import reactivemongo.play.json._
 
 class JsonSpec extends org.specs2.mutable.Specification {
@@ -28,7 +29,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
     "convert an empty JSON and give an empty BSON doc" in {
       val json = Json.obj()
       val bson = BSONFormats.toBSON(json).get.asInstanceOf[BSONDocument]
-      bson.isEmpty mustEqual true
+      bson.isEmpty must beTrue
       val json2 = BSONFormats.toJSON(bson)
       json2.as[JsObject].value.size mustEqual 0
     }
@@ -45,6 +46,13 @@ class JsonSpec extends org.specs2.mutable.Specification {
       val bson = BSONFormats.toBSON(json).get.asInstanceOf[BSONArray]
 
       json.toString mustEqual BSONFormats.toJSON(bson).toString
+    }
+
+    "convert BSONDouble NaN using the extended systen" in {
+      val bson = BSONDouble(Double.NaN)
+      val json = BSONFormats.toJSON(bson)
+
+      json must_== Json.obj("$double" -> "NaN")
     }
 
     "convert a JSON doc containing an array and vice versa" in {
