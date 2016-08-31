@@ -1,6 +1,6 @@
 language: scala
 scala:
-- 2.11.7
+- 2.11.8
 jdk:
 - oraclejdk8
 sudo: false
@@ -11,12 +11,23 @@ addons:
     - libnuma1
     - libnuma-dev
     - libnuma-dbg
+  coverity_scan:
+    project:
+      name: "ReactiveMongo/ReactiveMongo-Play-Json"
+      description: "ReactiveMongo Play JSON"
+      notification_email: noreply@reactivemongo.org
+      build_command_prepend: "echo 'Foo'"
+      build_command: "sbt package"
+      #branch_pattern: ci/coverity
 cache:
   directories:
   - $HOME/.ivy2
   - $HOME/.sbt
   - $HOME/ssl
   - $HOME/mongodb-linux-x86_64-amazon-3.2.8
+env:
+  global:
+    - secure: "IyjserEFe2k68zBEudMLmEeXUCrASZZ21QYkyfokNp5ZUePvKjbkfe5Ow27U9qxFmtCrgYoh2v7LUehvDQuQkO4QJrztta/gj61pvQ5bQ5pR+gP9kMWC5wpfAhKVc2O3leWFVkEGVJckjYfuMKQLAs6k7bG/BWb2WSfvsSXl5An9URqO9EPpnGd8SUkPBYo60/zmqrA9KDLUZd5rJd+JNwx8ZyqUcvCX1uWyCDFW5k2ijgbJ4Qd0qWvftDCBkSBY42EYrxzGKJzpSFHU3LGvhwPmYV0RXOKpQAIWBy8lp2qrpuwqxvv2yWu9fl8Wrkk6CkqKLULunE/GFiphCvm1urcltMJEIB7Ud1U7ht4SB2zy2Fxo2fYxX5C4KuBSHD/pcFuV0r26e9EpmtJZt/95ez/TxhT72aMZ0uFTxAq8isx3pmkwyaTVHeDaPfiqdgett3mM7YNpjsHRPJs9J6wZEEcgCNXOIDeb89HipCeDKMhLw7QjcOB/GM3kxJw9IncgYZaqeWF/PiS12KU1lMpoL+BkHNuPJDLL7e/2fJKHYCwWGO3aHhWq1q7a6p+CAuz/iIaJmZUGF5hD1CjhXanmjxjbkmrfBCKnS1JXLc+rHw8ScDjKGT83Nr8PE/slmBHyHOtT6+NuTDVS2/06EkuxN2UoIHVO1G9Pqscbxz6mTHo="
 before_install: ./.travis_scripts/beforeInstall.sh
 script: ./.travis_scripts/validate.sh
 after_success: ./.travis_scripts/afterSuccess.sh
