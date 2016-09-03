@@ -8,6 +8,7 @@ import play.api.libs.json.{
   JsObject,
   OWrites,
   Reads,
+  Writes,
   __
 }
 
@@ -87,7 +88,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
 
     "provides a Play JSON OWrites for T : BSONDocumentWriter" in {
       implicit val bsonWriter = Macros.writer[Item]
-      implicit val jsonWrites: OWrites[Item] = BSONFormats.jsonWrites[Item]
+      implicit val jsonOWrites: OWrites[Item] = BSONFormats.jsonOWrites[Item]
 
       Json.toJson(Item("foo", "bar", 1)) must_== Json.obj(
         "name" -> "foo",
@@ -96,8 +97,19 @@ class JsonSpec extends org.specs2.mutable.Specification {
       )
     }
 
-    "provides a Play JSON Reads for T : BSONDocumentWriter" in {
-      implicit val bsonReaders = Macros.reader[Item]
+    "provides a Play JSON Writes for T : BSONWriter" in {
+      implicit val bsonWriter = Macros.writer[Item]
+      implicit val jsonWrites: Writes[Item] = BSONFormats.jsonWrites[Item]
+
+      Json.toJson(Item("foo", "bar", 1)) must_== Json.obj(
+        "name" -> "foo",
+        "description" -> "bar",
+        "occurrences" -> 1
+      )
+    }
+
+    "provides a Play JSON Reads for T : BSONWriter" in {
+      implicit val bsonReader = Macros.reader[Item]
       implicit val jsonReads: Reads[Item] = BSONFormats.jsonReads[Item]
 
       Json.obj(
@@ -110,10 +122,27 @@ class JsonSpec extends org.specs2.mutable.Specification {
     }
 
     "provides a Play JSON OFormat for T" in {
-      implicit val bsonWriter = Macros.writer[Item]
-      implicit val bsonReaders = Macros.reader[Item]
+      implicit val bsonWriter = Macros.writer[Expeditor]
+      implicit val bsonReader = Macros.reader[Expeditor]
+      val format = BSONFormats.jsonOFormat[Expeditor]
 
-      BSONFormats.jsonFormat[Item] must not(throwA[Exception])
+      format.reads(format.writes(Expeditor("foo"))).
+        get must_== Expeditor("foo") and {
+          format.writes(format.reads(Json.obj("name" -> "foo")).get).
+            aka("JSON") must_== Json.obj("name" -> "foo")
+        }
+    }
+
+    "provides a Play JSON Format for T" in {
+      implicit val bsonWriter = Macros.writer[Expeditor]
+      implicit val bsonReader = Macros.reader[Expeditor]
+      val format = BSONFormats.jsonOFormat[Expeditor]
+
+      format.reads(format.writes(Expeditor("bar"))).
+        get must_== Expeditor("bar") and {
+          format.writes(format.reads(Json.obj("name" -> "bar")).get).
+            aka("JSON") must_== Json.obj("name" -> "bar")
+        }
     }
   }
 }

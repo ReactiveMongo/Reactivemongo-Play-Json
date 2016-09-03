@@ -15,6 +15,8 @@
  */
 package reactivemongo.play.json
 
+import scala.util.{ Failure, Success, Try }
+
 import play.api.libs.json.{
   Format,
   IdxPathNode,
@@ -48,6 +50,7 @@ import reactivemongo.bson.{
   BSONDocumentReader,
   BSONDocumentWriter,
   BSONDouble,
+  BSONHandler,
   BSONInteger,
   BSONJavaScript,
   BSONLong,
@@ -62,6 +65,7 @@ import reactivemongo.bson.{
   BSONUndefined,
   BSONValue,
   BSONWriter,
+  BSONReader,
   Subtype
 }
 import reactivemongo.bson.utils.Converters
@@ -85,22 +89,25 @@ class JSONException(message: String, cause: Throwable = null)
   extends RuntimeException(message, cause)
 
 object BSONFormats extends BSONFormats {
-  def jsonWrites[T](implicit bsonWriter: BSONDocumentWriter[T]): OWrites[T] =
+  def jsonOWrites[T](implicit bsonWriter: BSONDocumentWriter[T]): OWrites[T] =
     OWrites[T] { in: T => BSONDocumentFormat.json(bsonWriter.write(in)) }
 
-  def jsonReads[T](implicit bsonReader: BSONDocumentReader[T]): Reads[T] =
-    Reads[T] {
-      case obj @ JsObject(_) => try {
-        JsSuccess(bsonReader.read(BSONDocumentFormat.bson(obj)))
-      } catch {
-        case reason: Throwable => JsError(reason.getMessage)
-      }
+  def jsonWrites[T](implicit bsonWriter: BSONWriter[T, _ <: BSONValue]): Writes[T] = Writes[T] { in: T => BSONFormats.toJSON(bsonWriter.write(in)) }
 
-      case in => JsError(s"Expecting JSON document: $in")
-    }
+  def jsonReads[T](implicit bsonReader: BSONReader[_ <: BSONValue, T]): Reads[T] = Reads[T] { json =>
+    val r = bsonReader.widenReader[T]
 
-  def jsonFormat[T: BSONDocumentWriter: BSONDocumentReader]: OFormat[T] =
-    OFormat(jsonReads[T], jsonWrites[T])
+    BSONFormats.toBSON(json).flatMap(r.readTry(_) match {
+      case Success(v)      => JsSuccess(v)
+      case Failure(reason) => JsError(reason.getMessage)
+    })
+  }
+
+  def jsonOFormat[T: BSONDocumentWriter: BSONDocumentReader]: OFormat[T] =
+    OFormat(jsonReads[T], jsonOWrites[T])
+
+  def jsonFormat[T](implicit h: BSONHandler[_ <: BSONValue, T]): Format[T] =
+    Format(jsonReads[T](h), jsonWrites[T](h))
 }
 
 /**
@@ -519,7 +526,6 @@ object Writers {
 }
 
 object JSONSerializationPack extends reactivemongo.api.SerializationPack {
-  import scala.util.{ Failure, Success, Try }
   import reactivemongo.bson.buffer.{ ReadableBuffer, WritableBuffer }
 
   type Value = JsValue
