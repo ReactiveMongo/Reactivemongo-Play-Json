@@ -177,7 +177,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     // UNSAFE - FOR INTERNAL USE
     private[json] def json(bson: BSONDocument): JsObject =
-      JsObject(bson.elements.map(elem => elem._1 -> toJSON(elem._2)))
+      JsObject(bson.elements.map(elem => elem.name -> toJSON(elem.value)))
   }
 
   implicit object BSONDocumentFormat extends BSONDocumentFormat(toBSON, toJSON)
@@ -623,7 +623,7 @@ sealed trait LowerImplicitBSONHandlers {
     def write(js: A): B = BSONFormats.toBSON(js).get.asInstanceOf[B]
   }
 
-  implicit def JsFieldBSONElementProducer[T <: JsValue](jsField: (String, T)): Producer[BSONElement] = Producer.nameValue2Producer(jsField)
+  implicit def JsFieldBSONElementProducer[T <: JsValue](jsField: (String, T)): Producer[BSONElement] = Producer.element2Producer(BSONElement(jsField._1, BSONFormats.toBSON(jsField._2).get))
 
   implicit object BSONValueReads extends Reads[BSONValue] {
     def reads(js: JsValue) = BSONFormats.toBSON(js)

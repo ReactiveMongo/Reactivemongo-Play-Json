@@ -75,6 +75,23 @@ lazy val publishSettings = {
       </developers>))
 }
 
+// FindBugs
+import de.johoop.findbugs4sbt.{ FindBugs, ReportType }, FindBugs.{
+  findbugsExcludeFilters, findbugsReportPath, findbugsReportType,
+  findbugsSettings
+}
+
+findbugsSettings
+
+findbugsExcludeFilters := Some(
+  scala.xml.XML.loadFile(baseDirectory.value / "project" / (
+    "findbugs-exclude-filters.xml"))
+)
+
+findbugsReportType := Some(ReportType.PlainHtml)
+
+findbugsReportPath := Some(target.value / "findbugs.html")
+
 // Scalariform
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform

@@ -419,8 +419,9 @@ final class JSONCollection(
     }
 }
 
+@SerialVersionUID(1)
 case class JSONQueryBuilder(
-  collection: Collection,
+  @transient collection: Collection,
   failover: FailoverStrategy,
   queryOption: Option[JsObject] = None,
   sortOption: Option[JsObject] = None,
@@ -438,7 +439,7 @@ case class JSONQueryBuilder(
 
   type Self = JSONQueryBuilder
 
-  val pack = JSONSerializationPack
+  @transient val pack = JSONSerializationPack
   private def empty = Json.obj()
 
   def copy(queryOption: Option[JsObject], sortOption: Option[JsObject], projectionOption: Option[JsObject], hintOption: Option[JsObject], explainFlag: Boolean, snapshotFlag: Boolean, commentString: Option[String], options: QueryOpts, failover: FailoverStrategy, maxTimeMsOption: Option[Long]): JSONQueryBuilder =

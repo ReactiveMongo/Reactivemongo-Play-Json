@@ -21,4 +21,4 @@ if [ `sbt 'show version' 2>&1 | tail -n 1 | cut -d ' ' -f 2 | grep -- '-SNAPSHOT
   perl -pe "s|resolvers |resolvers += \"Sonatype Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots/\"\n\r\nresolvers |" < "$SCRIPT_DIR/../build.sbt" > /tmp/build.sbt && mv /tmp/build.sbt "$SCRIPT_DIR/../build.sbt"
 fi
 
-sbt ++$TRAVIS_SCALA_VERSION "testOnly *"
+sbt ++$TRAVIS_SCALA_VERSION ";findbugs ;testOnly *"
