@@ -50,7 +50,7 @@ import reactivemongo.play.json.{ BSONFormats, JSONSerializationPack }
  */
 object `package` {
   implicit object JSONCollectionProducer extends GenericCollectionProducer[JSONSerializationPack.type, JSONCollection] {
-    def apply(db: DB, name: String, failoverStrategy: FailoverStrategy) = new JSONCollection(db, name, failoverStrategy)
+    def apply(db: DB, name: String, failoverStrategy: FailoverStrategy) = new JSONCollection(db, name, failoverStrategy, db.defaultReadPreference)
   }
 }
 
@@ -364,12 +364,16 @@ object JSONBatchCommands
 final class JSONCollection(
   val db: DB,
   val name: String,
-  val failoverStrategy: FailoverStrategy
+  val failoverStrategy: FailoverStrategy,
+  override val readPreference: ReadPreference
 ) extends GenericCollection[JSONSerializationPack.type]
     with CollectionMetaCommands {
 
   val pack = JSONSerializationPack
   val BatchCommands = JSONBatchCommands
+
+  def withReadPreference(pref: ReadPreference): JSONCollection =
+    new JSONCollection(db, name, failoverStrategy, pref)
 
   def genericQueryBuilder: GenericQueryBuilder[JSONSerializationPack.type] =
     JSONQueryBuilder(this, failoverStrategy)
@@ -421,19 +425,18 @@ final class JSONCollection(
 
 @SerialVersionUID(1)
 case class JSONQueryBuilder(
-  @transient collection: Collection,
-  failover: FailoverStrategy,
-  queryOption: Option[JsObject] = None,
-  sortOption: Option[JsObject] = None,
-  projectionOption: Option[JsObject] = None,
-  hintOption: Option[JsObject] = None,
-  explainFlag: Boolean = false,
-  snapshotFlag: Boolean = false,
-  commentString: Option[String] = None,
-  options: QueryOpts = QueryOpts(),
-  maxTimeMsOption: Option[Long] = None
-)
-    extends GenericQueryBuilder[JSONSerializationPack.type] {
+    @transient collection: Collection,
+    failover: FailoverStrategy,
+    queryOption: Option[JsObject] = None,
+    sortOption: Option[JsObject] = None,
+    projectionOption: Option[JsObject] = None,
+    hintOption: Option[JsObject] = None,
+    explainFlag: Boolean = false,
+    snapshotFlag: Boolean = false,
+    commentString: Option[String] = None,
+    options: QueryOpts = QueryOpts(),
+    maxTimeMsOption: Option[Long] = None
+) extends GenericQueryBuilder[JSONSerializationPack.type] {
 
   import play.api.libs.json.{ JsValue, Json }
 

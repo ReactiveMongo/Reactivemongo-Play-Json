@@ -26,7 +26,9 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
 
   lazy val collectionName = s"test_users_${System identityHashCode this}"
   lazy val bsonCollection = db(collectionName)
-  lazy val collection = new JSONCollection(db, collectionName, new FailoverStrategy())
+  lazy val collection = new JSONCollection(
+    db, collectionName, new FailoverStrategy(), db.defaultReadPreference
+  )
 
   "JSONCollection.save" should {
     "add object if there does not exist in database" in { implicit ee: EE =>
