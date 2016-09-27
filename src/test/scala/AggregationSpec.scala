@@ -21,9 +21,9 @@ object AggregationSpec extends org.specs2.mutable.Specification {
   import collection.BatchCommands.AggregationFramework
   import AggregationFramework.{
     Cursor,
-    First,
+    FirstField,
     Group,
-    Last,
+    LastField,
     Match,
     Project,
     Sort,
@@ -102,7 +102,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
 
       val pipeline = List(
         Group(toJson("$_id.state"))("avgCityPop" ->
-          AggregationFramework.Avg("pop"))
+          AggregationFramework.AvgField("pop"))
       )
 
       "successfully as a single batch" in { implicit ee: EE =>
@@ -165,10 +165,10 @@ object AggregationSpec extends org.specs2.mutable.Specification {
         List(
           Sort(Ascending("population")),
           Group(toJson("$_id.state"))(
-            "biggestCity" -> Last("_id.city"),
-            "biggestPop" -> Last("pop"),
-            "smallestCity" -> First("_id.city"),
-            "smallestPop" -> First("pop")
+            "biggestCity" -> LastField("_id.city"),
+            "biggestPop" -> LastField("pop"),
+            "smallestCity" -> FirstField("_id.city"),
+            "smallestPop" -> FirstField("pop")
           ),
           Project(document("_id" -> 0, "state" -> "$_id",
             "biggestCity" -> document(
