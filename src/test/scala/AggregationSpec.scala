@@ -112,8 +112,8 @@ object AggregationSpec extends org.specs2.mutable.Specification {
 
       "with cursor" >> {
         def collect(upTo: Int = Int.MaxValue) =
-          collection.aggregate1[JsObject](firstOp, pipeline, Cursor(1)).
-            flatMap(_.collect[List](upTo))
+          collection.aggregate1[JsObject](firstOp, pipeline,
+            batchSize = Some(1)).collect[List](upTo)
 
         "without limit (maxDocs)" in { implicit ee: EE =>
           collect() aka "cursor result" must beEqualTo(expected).

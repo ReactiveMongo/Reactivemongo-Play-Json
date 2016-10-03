@@ -369,6 +369,10 @@ final class JSONCollection(
 ) extends GenericCollection[JSONSerializationPack.type]
     with CollectionMetaCommands {
 
+  @deprecated("Use the constructor with a ReadPreference", "0.12-RC5")
+  def this(db: DB, name: String, failoverStrategy: FailoverStrategy) =
+    this(db, name, failoverStrategy, db.defaultReadPreference)
+
   val pack = JSONSerializationPack
   val BatchCommands = JSONBatchCommands
 

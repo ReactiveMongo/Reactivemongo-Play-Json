@@ -205,7 +205,10 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONObjectIDFormat extends PartialFormat[BSONObjectID] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONObjectID]] = {
-      case OidValue(oid) => JsSuccess(BSONObjectID(oid))
+      case OidValue(oid) => BSONObjectID.parse(oid) match {
+        case Success(id) => JsSuccess(id)
+        case Failure(er) => JsError(er.getMessage)
+      }
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
