@@ -25,9 +25,13 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
 
-libraryDependencies ++= Seq(
-  "org.reactivemongo" %% "reactivemongo" % buildVersion % "provided" cross CrossVersion.binary,
-  "com.typesafe.play" %% "play-json" % "2.4.8" % "provided" cross CrossVersion.binary)
+libraryDependencies ++= {
+  val playVer = sys.env.get("PLAY_VERSION").getOrElse("2.4.8")
+
+  Seq(
+    "org.reactivemongo" %% "reactivemongo" % buildVersion % "provided" cross CrossVersion.binary,
+    "com.typesafe.play" %% "play-json" % playVer % "provided" cross CrossVersion.binary)
+}
 
 // Test
 fork in Test := false
@@ -43,6 +47,24 @@ testOptions in Test += Tests.Cleanup(cl => {
 libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-core" % "3.8.3",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
+
+// Travis CI
+val travisEnv = taskKey[Unit]("Print Travis CI env")
+
+travisEnv in Test := { // test:travisEnv from SBT CLI
+  val specs = List[(String, List[String])](
+    "PLAY_VERSION" -> List("2.3.10", "2.5.9")
+  )
+
+  def matrix = specs.flatMap {
+    case (key, values) => values.map(key -> _)
+  }.combinations(specs.size).collect {
+    case flags if (flags.map(_._1).toSet.size == specs.size) =>
+      flags.sortBy(_._1).map { case (k, v) => s"$k=$v" }
+  }.map { c => s"""  - ${c mkString " "}""" }
+
+  println(s"""Travis CI env:\r\n${matrix.mkString("\r\n")}""")
+}
 
 // Publish
 

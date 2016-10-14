@@ -1,8 +1,4 @@
 language: scala
-scala:
-- 2.11.7
-jdk:
-- oraclejdk8
 sudo: false
 addons:
   apt:
@@ -16,7 +12,14 @@ cache:
   - $HOME/.ivy2
   - $HOME/.sbt
   - $HOME/ssl
-  - $HOME/mongodb-linux-x86_64-amazon-3.2.8
+  - $HOME/mongodb-linux-x86_64-amazon-3.2.10
+scala:
+- 2.11.8
+jdk:
+- oraclejdk8
+env:
+  - PLAY_VERSION=2.4.8
+  - PLAY_VERSION=2.5.9
 before_install: ./.ci_scripts/beforeInstall.sh
 script: ./.ci_scripts/validate.sh
 after_success: ./.ci_scripts/afterSuccess.sh
