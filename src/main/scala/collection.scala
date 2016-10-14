@@ -376,11 +376,11 @@ final class JSONCollection(
   val pack = JSONSerializationPack
   val BatchCommands = JSONBatchCommands
 
-  def genericQueryBuilder: GenericQueryBuilder[JSONSerializationPack.type] =
-    JSONQueryBuilder(this, failoverStrategy)
-
   def withReadPreference(pref: ReadPreference): JSONCollection =
     new JSONCollection(db, name, failoverStrategy, pref)
+
+  def genericQueryBuilder: GenericQueryBuilder[JSONSerializationPack.type] =
+    JSONQueryBuilder(this, failoverStrategy)
 
   /**
    * Inserts the document, or updates it if it already exists in the collection.

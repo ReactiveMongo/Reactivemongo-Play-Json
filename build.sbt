@@ -3,7 +3,7 @@ organization := "org.reactivemongo"
 name := "reactivemongo-play-json"
 
 val nextMajor = "0.12.0"
-val buildVersion = "0.12-RC6"
+val buildVersion = nextMajor
 
 version := s"$buildVersion-play24"
 
