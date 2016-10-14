@@ -11,7 +11,7 @@ scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-target:jvm-1.8")
 
-scalacOptions in (Compile, doc) := Seq(
+scalacOptions in (Compile, doc) ++= Seq(
   "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
   /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
   Opts.doc.title("ReactiveMongo Play JSON API") ++
