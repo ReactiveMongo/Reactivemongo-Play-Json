@@ -123,7 +123,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   }
 
   implicit object BSONDoubleFormat extends PartialFormat[BSONDouble] {
-    private val jsNaN = Json.obj("$double" -> "NaN")
+    private val jsNaN = Json.obj(f"$$double" -> "NaN")
 
     val partialReads: PartialFunction[JsValue, JsResult[BSONDouble]] = {
       case JsNumber(f)        => JsSuccess(BSONDouble(f.toDouble))
@@ -137,7 +137,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     private object DoubleValue {
       def unapply(obj: JsObject): Option[Double] =
-        (obj \ "$double").asOpt[JsNumber].map(_.value.toDouble)
+        (obj \ f"$$double").asOpt[JsNumber].map(_.value.toDouble)
     }
   }
 
@@ -212,12 +212,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case oid: BSONObjectID => Json.obj("$oid" -> oid.stringify)
+      case oid: BSONObjectID => Json.obj(f"$$oid" -> oid.stringify)
     }
 
     private object OidValue {
       def unapply(obj: JsObject): Option[String] =
-        if (obj.fields.size != 1) None else (obj \ "$oid").asOpt[String]
+        if (obj.fields.size != 1) None else (obj \ f"$$oid").asOpt[String]
     }
   }
 
@@ -227,12 +227,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONJavaScript(code) => Json.obj("$javascript" -> code)
+      case BSONJavaScript(code) => Json.obj(f"$$javascript" -> code)
     }
 
     private object JavascriptValue {
       def unapply(obj: JsObject): Option[String] =
-        if (obj.fields.size != 1) None else (obj \ "$javascript").asOpt[String]
+        if (obj.fields.size != 1) None else (obj \ f"$$javascript").asOpt[String]
     }
   }
 
@@ -252,14 +252,14 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case dt: BSONDateTime => Json.obj("$date" -> dt.value)
+      case dt: BSONDateTime => Json.obj(f"$$date" -> dt.value)
     }
 
     private object DateValue {
       def unapply(obj: JsObject): Option[Long] =
-        (obj \ "$date").asOpt[JsValue].flatMap {
+        (obj \ f"$$date").asOpt[JsValue].flatMap {
           case n @ JsNumber(_) => n.asOpt[Long]
-          case o @ JsObject(_) => (o \ "$numberLong").asOpt[Long]
+          case o @ JsObject(_) => (o \ f"$$numberLong").asOpt[Long]
           case _               => None
         }
     }
@@ -272,8 +272,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
       case ts: BSONTimestamp => Json.obj(
-        "$time" -> (ts.value >>> 32), "$i" -> ts.value.toInt,
-        "$timestamp" -> Json.obj(
+        f"$$time" -> (ts.value >>> 32), f"$$i" -> ts.value.toInt,
+        f"$$timestamp" -> Json.obj(
           "t" -> (ts.value >>> 32), "i" -> ts.value.toInt
         )
       )
@@ -281,13 +281,13 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     private object TimeValue {
       def unapply(obj: JsObject): Option[(Long, Int)] = (for {
-        time <- (obj \ "$time").asOpt[Long]
-        i <- (obj \ "$i").asOpt[Int]
+        time <- (obj \ f"$$time").asOpt[Long]
+        i <- (obj \ f"$$i").asOpt[Int]
       } yield (time, i)).orElse(legacy(obj))
 
       def legacy(obj: JsObject): Option[(Long, Int)] = for {
-        time <- (obj \ "$timestamp" \ "t").asOpt[Long]
-        i <- (obj \ "$timestamp" \ "i").asOpt[Int]
+        time <- (obj \ f"$$timestamp" \ "t").asOpt[Long]
+        i <- (obj \ f"$$timestamp" \ "i").asOpt[Int]
       } yield (time, i)
     }
   }
@@ -296,7 +296,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       extends PartialFormat[BSONUndefined.type] {
     private object Undefined {
       def unapply(obj: JsObject): Option[BSONUndefined.type] =
-        obj.value.get("$undefined") match {
+        obj.value.get(f"$$undefined") match {
           case Some(JsBoolean(true)) => Some(BSONUndefined)
           case _                     => None
         }
@@ -307,31 +307,31 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONUndefined => Json.obj("$undefined" -> true)
+      case BSONUndefined => Json.obj(f"$$undefined" -> true)
     }
   }
 
   implicit object BSONRegexFormat extends PartialFormat[BSONRegex] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONRegex]] = {
-      case js: JsObject if js.values.size == 1 && js.fields.head._1 == "$regex" =>
+      case js: JsObject if js.values.size == 1 && js.fields.head._1 == f"$$regex" =>
         js.fields.head._2.asOpt[String].
           map(rx => JsSuccess(BSONRegex(rx, ""))).
-          getOrElse(JsError(__ \ "$regex", "string expected"))
-      case js: JsObject if js.value.size == 2 && js.value.exists(_._1 == "$regex") && js.value.exists(_._1 == "$options") =>
-        val rx = (js \ "$regex").asOpt[String]
-        val opts = (js \ "$options").asOpt[String]
+          getOrElse(JsError(__ \ f"$$regex", "string expected"))
+      case js: JsObject if js.value.size == 2 && js.value.exists(_._1 == f"$$regex") && js.value.exists(_._1 == f"$$options") =>
+        val rx = (js \ f"$$regex").asOpt[String]
+        val opts = (js \ f"$$options").asOpt[String]
         (rx, opts) match {
           case (Some(rx), Some(opts)) => JsSuccess(BSONRegex(rx, opts))
-          case (None, Some(_))        => JsError(__ \ "$regex", "string expected")
-          case (Some(_), None)        => JsError(__ \ "$options", "string expected")
-          case _                      => JsError(__ \ "$regex", "string expected") ++ JsError(__ \ "$options", "string expected")
+          case (None, Some(_))        => JsError(__ \ f"$$regex", "string expected")
+          case (Some(_), None)        => JsError(__ \ f"$$options", "string expected")
+          case _                      => JsError(__ \ f"$$regex", "string expected") ++ JsError(__ \ f"$$options", "string expected")
         }
     }
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
       case rx: BSONRegex =>
         if (rx.flags.isEmpty)
-          Json.obj("$regex" -> rx.value)
-        else Json.obj("$regex" -> rx.value, "$options" -> rx.flags)
+          Json.obj(f"$$regex" -> rx.value)
+        else Json.obj(f"$$regex" -> rx.value, f"$$options" -> rx.flags)
     }
   }
 
@@ -340,7 +340,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     private object MinKey {
       private val JsOne = JsNumber(1)
       def unapply(obj: JsObject): Option[BSONMinKey.type] =
-        obj.value.get("$minKey") match {
+        obj.value.get(f"$$minKey") match {
           case Some(JsOne)           => Some(BSONMinKey)
           case Some(JsBoolean(true)) => Some(BSONMinKey)
           case _                     => None
@@ -352,7 +352,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONMinKey => Json.obj("$minKey" -> 1)
+      case BSONMinKey => Json.obj(f"$$minKey" -> 1)
     }
   }
 
@@ -361,7 +361,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     private object MaxKey {
       private val JsOne = JsNumber(1)
       def unapply(obj: JsObject): Option[BSONMaxKey.type] =
-        obj.value.get("$maxKey") match {
+        obj.value.get(f"$$maxKey") match {
           case Some(JsOne)           => Some(BSONMaxKey)
           case Some(JsBoolean(true)) => Some(BSONMaxKey)
           case _                     => None
@@ -373,7 +373,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONMaxKey => Json.obj("$maxKey" -> 1)
+      case BSONMaxKey => Json.obj(f"$$maxKey" -> 1)
     }
   }
 
@@ -398,7 +398,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     private object IntValue {
       def unapply(obj: JsObject): Option[Int] =
-        (obj \ "$int").asOpt[JsNumber].map(_.value.toInt)
+        (obj \ f"$$int").asOpt[JsNumber].map(_.value.toInt)
     }
   }
 
@@ -414,7 +414,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     private object LongValue {
       def unapply(obj: JsObject): Option[Long] =
-        (obj \ "$long").asOpt[JsNumber].map(_.value.toLong)
+        (obj \ f"$$long").asOpt[JsNumber].map(_.value.toLong)
     }
   }
 
@@ -426,10 +426,10 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
         case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
       }
       case obj: JsObject if obj.fields.exists {
-        case (str, _: JsString) if str == "$binary" => true
-        case _                                      => false
+        case (str, _: JsString) if str == f"$$binary" => true
+        case _                                        => false
       } => try {
-        JsSuccess(BSONBinary(Converters.str2Hex((obj \ "$binary").as[String]), Subtype.UserDefinedSubtype))
+        JsSuccess(BSONBinary(Converters.str2Hex((obj \ f"$$binary").as[String]), Subtype.UserDefinedSubtype))
       } catch {
         case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
       }
@@ -438,8 +438,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       case binary: BSONBinary =>
         val remaining = binary.value.readable()
         Json.obj(
-          "$binary" -> Converters.hex2Str(binary.value.slice(remaining).readArray(remaining)),
-          "$type" -> Converters.hex2Str(Array(binary.subtype.value.toByte))
+          f"$$binary" -> Converters.hex2Str(binary.value.slice(remaining).readArray(remaining)),
+          f"$$type" -> Converters.hex2Str(Array(binary.subtype.value.toByte))
         )
     }
   }
@@ -450,12 +450,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONSymbol(s) => Json.obj("$symbol" -> s)
+      case BSONSymbol(s) => Json.obj(f"$$symbol" -> s)
     }
 
     private object SymbolValue {
       def unapply(obj: JsObject): Option[String] =
-        if (obj.fields.size != 1) None else (obj \ "$symbol").asOpt[String]
+        if (obj.fields.size != 1) None else (obj \ f"$$symbol").asOpt[String]
     }
   }
 

@@ -447,7 +447,6 @@ case class JSONQueryBuilder(
   type Self = JSONQueryBuilder
 
   @transient val pack = JSONSerializationPack
-  private def empty = Json.obj()
 
   def copy(queryOption: Option[JsObject], sortOption: Option[JsObject], projectionOption: Option[JsObject], hintOption: Option[JsObject], explainFlag: Boolean, snapshotFlag: Boolean, commentString: Option[String], options: QueryOpts, failover: FailoverStrategy, maxTimeMsOption: Option[Long]): JSONQueryBuilder =
     JSONQueryBuilder(collection, failover, queryOption, sortOption, projectionOption, hintOption, explainFlag, snapshotFlag, commentString, options, maxTimeMsOption)
@@ -475,16 +474,16 @@ case class JSONQueryBuilder(
     }
 
     val optional = List[Option[(String, JsValue)]](
-      queryOption.map { "$query" -> Json.toJson(_) },
-      sortOption.map { "$orderby" -> Json.toJson(_) },
-      hintOption.map { "$hint" -> Json.toJson(_) },
-      maxTimeMsOption.map { "$maxTimeMS" -> Json.toJson(_) },
-      commentString.map { "$comment" -> Json.toJson(_) },
-      option(explainFlag, "$explain" -> Json.toJson(true)),
-      option(snapshotFlag, "$snapshot" -> Json.toJson(true))
+      queryOption.map { f"$$query" -> Json.toJson(_) },
+      sortOption.map { f"$$orderby" -> Json.toJson(_) },
+      hintOption.map { f"$$hint" -> Json.toJson(_) },
+      maxTimeMsOption.map { f"$$maxTimeMS" -> Json.toJson(_) },
+      commentString.map { f"$$comment" -> Json.toJson(_) },
+      option(explainFlag, f"$$explain" -> Json.toJson(true)),
+      option(snapshotFlag, f"$$snapshot" -> Json.toJson(true))
     ).flatten
 
-    JsObject((optional :+ ("$readPreference" -> pref)))
+    JsObject((optional :+ (f"$$readPreference" -> pref)))
   }
 }
 
