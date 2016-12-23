@@ -1,21 +1,26 @@
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifacts
+
 organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-val nextMajor = "0.12.0"
-val buildVersion = nextMajor
+val nextRelease = "0.12.1"
+val buildVersion = nextRelease
 
 version := s"$buildVersion-play24"
 
-scalaVersion := "2.11.8"
+scalaVersion in ThisBuild := "2.11.8"
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-target:jvm-1.8")
+scalacOptions ++= Seq(
+  "-unchecked", "-deprecation", "-target:jvm-1.8",
+  "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-dead-code")
 
 scalacOptions in (Compile, doc) ++= Seq(
   "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
   /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
   Opts.doc.title("ReactiveMongo Play JSON API") ++
-  Opts.doc.version(nextMajor)
+  Opts.doc.version(nextRelease)
 
 crossScalaVersions := Seq(scalaVersion.value)
 
@@ -45,7 +50,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "3.8.3",
+  "org.specs2" %% "specs2-core" % "3.8.6",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI
@@ -67,6 +72,11 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
 }
 
 // Publish
+val previousVersion = "0.12.0"
+val mimaSettings = mimaDefaultSettings ++ Seq(
+  previousArtifacts := Set(
+    organization.value %% moduleName.value % previousVersion)
+)
 
 lazy val publishSettings = {
   @inline def env(n: String): String = sys.env.get(n).getOrElse(n)
@@ -74,7 +84,7 @@ lazy val publishSettings = {
   val repoName = env("PUBLISH_REPO_NAME")
   val repoUrl = env("PUBLISH_REPO_URL")
 
-  Seq(
+  mimaSettings ++ Seq(
     publishMavenStyle := true,
     publishArtifact in Test := false,
     publishTo := Some(repoUrl).map(repoName at _),
