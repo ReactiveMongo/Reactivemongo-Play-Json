@@ -6,7 +6,7 @@ organization := "org.reactivemongo"
 name := "reactivemongo-play-json"
 
 val nextRelease = "0.12.1"
-val buildVersion = s"$nextRelease-SNAPSHOT"
+val buildVersion = nextRelease
 
 version := buildVersion
 
