@@ -1,10 +1,6 @@
 import scala.concurrent.Future
 
-import play.api.libs.json.{
-  JsArray,
-  Json,
-  JsObject
-}, Json.{ obj => document, toJson }
+import play.api.libs.json.{ Json, JsObject }, Json.{ obj => document, toJson }
 
 import org.specs2.concurrent.{ ExecutionEnv => EE }
 
@@ -20,7 +16,6 @@ object AggregationSpec extends org.specs2.mutable.Specification {
   val collection = db.collection[JSONCollection]("zipcodes")
   import collection.BatchCommands.AggregationFramework
   import AggregationFramework.{
-    Cursor,
     FirstField,
     Group,
     LastField,
@@ -73,11 +68,6 @@ object AggregationSpec extends org.specs2.mutable.Specification {
     }
 
     "explain simple result" in { implicit ee: EE =>
-      val expected = List(
-        document("_id" -> "JP", "totalPop" -> 13185702L),
-        document("_id" -> "NY", "totalPop" -> 19746227L)
-      )
-
       collection.aggregate(Group(toJson("$state"))(
         "totalPop" -> SumField("population")
       ), List(Match(document("totalPop" -> document("$gte" -> 10000000L)))),
@@ -111,7 +101,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
       }
 
       "with cursor" >> {
-        def collect(upTo: Int = Int.MaxValue) =
+        def collect(upTo: Int = Int.MaxValue)(implicit ee: EE) =
           collection.aggregate1[JsObject](firstOp, pipeline,
             batchSize = Some(1)).collect[List](upTo)
 

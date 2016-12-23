@@ -1,5 +1,4 @@
 import play.api.libs.json.{
-  JsError,
   Json,
   JsNumber,
   JsResult,
@@ -71,7 +70,6 @@ class JsonSpec extends org.specs2.mutable.Specification {
       import Writers._
 
       case class Limit(low: Option[Int], high: Option[Int])
-      case class App(limit: Option[Limit])
 
       val lowWriter = (__ \ "low").writeNullable[Int]
       val highWriter = (__ \ "high").writeNullable[Int]
