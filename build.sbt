@@ -31,10 +31,6 @@ scalacOptions in (Compile, doc) ++= Seq(
   Opts.doc.title("ReactiveMongo Play JSON API") ++
   Opts.doc.version(nextRelease)
 
-crossScalaVersions := Seq(scalaVersion.value)
-
-crossVersion := CrossVersion.binary
-
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
