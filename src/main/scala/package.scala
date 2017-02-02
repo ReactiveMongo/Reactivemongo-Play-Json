@@ -15,12 +15,12 @@
  */
 package reactivemongo.play.json
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 import play.api.libs.json._
-import reactivemongo.bson.{BSONArray, BSONBinary, BSONBoolean, BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONDouble, BSONHandler, BSONInteger, BSONJavaScript, BSONLong, BSONMaxKey, BSONMinKey, BSONNull, BSONObjectID, BSONReader, BSONRegex, BSONString, BSONSymbol, BSONTimestamp, BSONUndefined, BSONValue, BSONWriter, Subtype}
+import reactivemongo.bson.{ BSONArray, BSONBinary, BSONBoolean, BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONDouble, BSONHandler, BSONInteger, BSONJavaScript, BSONLong, BSONMaxKey, BSONMinKey, BSONNull, BSONObjectID, BSONReader, BSONRegex, BSONString, BSONSymbol, BSONTimestamp, BSONUndefined, BSONValue, BSONWriter, Subtype }
 import reactivemongo.bson.utils.Converters
 
-import scala.math.BigDecimal.{double2bigDecimal, int2bigDecimal, long2bigDecimal}
+import scala.math.BigDecimal.{ double2bigDecimal, int2bigDecimal, long2bigDecimal }
 
 object `package` extends ImplicitBSONHandlers {
   object readOpt {
@@ -506,7 +506,7 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def writeToBuffer(buffer: WritableBuffer, document: Document): WritableBuffer = BSONFormats.toBSON(document) match {
     case JsError(errors) =>
-      throw new RuntimeException(s"fails to write the document: $document: ${Json stringify JsError.toJson(errors)}",  JsResultException(errors))
+      throw new RuntimeException(s"fails to write the document: $document: ${Json stringify JsError.toJson(errors)}", JsResultException(errors))
 
     case JsSuccess(d @ BSONDocument(_), _) => {
       BSONDocument.write(d, buffer)
@@ -534,7 +534,7 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
           new scala.RuntimeException(s"fails to reads the value: ${Json stringify value}; ${Json stringify JsError.toJson(errors)}", JsResultException(errors))
         )
 
-      case JsSuccess(v, _)  => Success(v)
+      case JsSuccess(v, _) => Success(v)
     }
 
 }
