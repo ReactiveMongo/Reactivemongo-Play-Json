@@ -555,7 +555,7 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def deserialize[A](document: Document, reader: Reader[A]): A =
     reader.reads(document) match {
-      case JsError(msg)    => throw new RuntimeException(msg mkString ", ", JsResultException(msg))
+      case JsError(errors) => throw JsResultException(errors)
       case JsSuccess(v, _) => v
     }
 
