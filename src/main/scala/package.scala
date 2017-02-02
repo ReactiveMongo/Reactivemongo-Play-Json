@@ -15,66 +15,12 @@
  */
 package reactivemongo.play.json
 
-import scala.util.{ Failure, Success, Try }
-
-import play.api.libs.json.{
-  Format,
-  IdxPathNode,
-  JsArray,
-  JsBoolean,
-  JsError,
-  JsNumber,
-  JsNull,
-  JsLookupResult,
-  JsObject,
-  JsResult,
-  JsSuccess,
-  JsString,
-  JsPath,
-  JsValue,
-  Json,
-  KeyPathNode,
-  OFormat,
-  OWrites,
-  Reads,
-  RecursiveSearch,
-  Writes,
-  __
-}
-import reactivemongo.bson.{
-  BSONArray,
-  BSONBinary,
-  BSONBoolean,
-  BSONDateTime,
-  BSONDocument,
-  BSONDocumentReader,
-  BSONDocumentWriter,
-  BSONDouble,
-  BSONHandler,
-  BSONInteger,
-  BSONJavaScript,
-  BSONLong,
-  BSONMaxKey,
-  BSONMinKey,
-  BSONNull,
-  BSONSymbol,
-  BSONObjectID,
-  BSONRegex,
-  BSONString,
-  BSONTimestamp,
-  BSONUndefined,
-  BSONValue,
-  BSONWriter,
-  BSONReader,
-  Subtype
-}
+import scala.util.{Failure, Success, Try}
+import play.api.libs.json._
+import reactivemongo.bson.{BSONArray, BSONBinary, BSONBoolean, BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONDouble, BSONHandler, BSONInteger, BSONJavaScript, BSONLong, BSONMaxKey, BSONMinKey, BSONNull, BSONObjectID, BSONReader, BSONRegex, BSONString, BSONSymbol, BSONTimestamp, BSONUndefined, BSONValue, BSONWriter, Subtype}
 import reactivemongo.bson.utils.Converters
 
-import scala.math.BigDecimal.{
-  double2bigDecimal,
-  int2bigDecimal,
-  long2bigDecimal
-}
+import scala.math.BigDecimal.{double2bigDecimal, int2bigDecimal, long2bigDecimal}
 
 object `package` extends ImplicitBSONHandlers {
   object readOpt {
@@ -554,12 +500,13 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def deserialize[A](document: Document, reader: Reader[A]): A =
     reader.reads(document) match {
-      case JsError(msg)    => sys.error(msg mkString ", ")
+      case JsError(msg)    => throw new RuntimeException(msg mkString ", ", JsResultException(msg))
       case JsSuccess(v, _) => v
     }
 
   def writeToBuffer(buffer: WritableBuffer, document: Document): WritableBuffer = BSONFormats.toBSON(document) match {
-    case err @ JsError(_) => sys.error(s"fails to write the document: $document: ${Json stringify JsError.toJson(err)}")
+    case JsError(errors) =>
+      throw new RuntimeException(s"fails to write the document: $document: ${Json stringify JsError.toJson(errors)}",  JsResultException(errors))
 
     case JsSuccess(d @ BSONDocument(_), _) => {
       BSONDocument.write(d, buffer)
@@ -582,7 +529,10 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def readValue[A](value: Value, reader: WidenValueReader[A]): Try[A] =
     reader.reads(value) match {
-      case err @ JsError(_) => Failure(new scala.RuntimeException(s"fails to reads the value: ${Json stringify value}; ${Json stringify JsError.toJson(err)}"))
+      case JsError(errors) =>
+        Failure(
+          new scala.RuntimeException(s"fails to reads the value: ${Json stringify value}; ${Json stringify JsError.toJson(errors)}", JsResultException(errors))
+        )
 
       case JsSuccess(v, _)  => Success(v)
     }
