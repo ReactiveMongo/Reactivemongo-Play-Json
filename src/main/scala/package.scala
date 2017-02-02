@@ -16,11 +16,66 @@
 package reactivemongo.play.json
 
 import scala.util.{ Failure, Success, Try }
-import play.api.libs.json._
-import reactivemongo.bson.{ BSONArray, BSONBinary, BSONBoolean, BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONDouble, BSONHandler, BSONInteger, BSONJavaScript, BSONLong, BSONMaxKey, BSONMinKey, BSONNull, BSONObjectID, BSONReader, BSONRegex, BSONString, BSONSymbol, BSONTimestamp, BSONUndefined, BSONValue, BSONWriter, Subtype }
+
+import play.api.libs.json.{
+  Format,
+  IdxPathNode,
+  JsArray,
+  JsBoolean,
+  JsError,
+  JsNumber,
+  JsNull,
+  JsLookupResult,
+  JsObject,
+  JsResult,
+  JsSuccess,
+  JsString,
+  JsPath,
+  JsValue,
+  Json,
+  KeyPathNode,
+  OFormat,
+  OWrites,
+  Reads,
+  RecursiveSearch,
+  Writes,
+  JsResultException,
+  __
+}
+import reactivemongo.bson.{
+  BSONArray,
+  BSONBinary,
+  BSONBoolean,
+  BSONDateTime,
+  BSONDocument,
+  BSONDocumentReader,
+  BSONDocumentWriter,
+  BSONDouble,
+  BSONHandler,
+  BSONInteger,
+  BSONJavaScript,
+  BSONLong,
+  BSONMaxKey,
+  BSONMinKey,
+  BSONNull,
+  BSONSymbol,
+  BSONObjectID,
+  BSONRegex,
+  BSONString,
+  BSONTimestamp,
+  BSONUndefined,
+  BSONValue,
+  BSONWriter,
+  BSONReader,
+  Subtype
+}
 import reactivemongo.bson.utils.Converters
 
-import scala.math.BigDecimal.{ double2bigDecimal, int2bigDecimal, long2bigDecimal }
+import scala.math.BigDecimal.{
+  double2bigDecimal,
+  int2bigDecimal,
+  long2bigDecimal
+}
 
 object `package` extends ImplicitBSONHandlers {
   object readOpt {
