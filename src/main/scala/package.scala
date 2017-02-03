@@ -39,6 +39,7 @@ import play.api.libs.json.{
   Reads,
   RecursiveSearch,
   Writes,
+  JsResultException,
   __
 }
 import reactivemongo.bson.{
@@ -554,12 +555,12 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def deserialize[A](document: Document, reader: Reader[A]): A =
     reader.reads(document) match {
-      case JsError(msg)    => sys.error(msg mkString ", ")
+      case JsError(errors) => throw JsResultException(errors)
       case JsSuccess(v, _) => v
     }
 
   def writeToBuffer(buffer: WritableBuffer, document: Document): WritableBuffer = BSONFormats.toBSON(document) match {
-    case err @ JsError(_) => sys.error(s"fails to write the document: $document: ${Json stringify JsError.toJson(err)}")
+    case JsError(errors) => throw JsResultException(errors)
 
     case JsSuccess(d @ BSONDocument(_), _) => {
       BSONDocument.write(d, buffer)
@@ -582,9 +583,9 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def readValue[A](value: Value, reader: WidenValueReader[A]): Try[A] =
     reader.reads(value) match {
-      case err @ JsError(_) => Failure(new scala.RuntimeException(s"fails to reads the value: ${Json stringify value}; ${Json stringify JsError.toJson(err)}"))
+      case JsError(errors) => Failure(JsResultException(errors))
 
-      case JsSuccess(v, _)  => Success(v)
+      case JsSuccess(v, _) => Success(v)
     }
 
 }
