@@ -208,10 +208,9 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
-val scapegoatSettings = Seq(
-  scapegoatVersion := "1.3.0",
-  scapegoatReports := Seq("xml")
-)
+scapegoatVersion := "1.3.0"
+
+scapegoatReports := Seq("xml")
 
 lazy val root = (project in file(".")).
   settings(publishSettings ++ Release.settings)
