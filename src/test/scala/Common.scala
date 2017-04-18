@@ -3,7 +3,7 @@ import scala.concurrent.duration._
 import reactivemongo.api.MongoDriver
 
 object Common {
-  val timeout = 5 seconds
+  val timeout = 5.seconds
   val timeoutMillis = timeout.toMillis.toInt
 
   lazy val driver = new MongoDriver()

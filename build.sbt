@@ -5,31 +5,52 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-val nextRelease = "0.12.2"
-val buildVersion = s"$nextRelease-SNAPSHOT"
-
-version := buildVersion
-
 scalaVersion in ThisBuild := "2.11.8"
 
 crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.1")
 
 crossVersion in ThisBuild := CrossVersion.binary
 
-scalacOptions in Compile ++= Seq(
-  "-target:jvm-1.8", "-unchecked", "-deprecation",
-  "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-dead-code")
+scalacOptions ++= Seq(
+  "-encoding", "UTF-8", "-target:jvm-1.8",
+  "-unchecked",
+  "-deprecation",
+  "-feature",
+  //"-Xfatal-warnings",
+  "-Xlint",
+  "-Ywarn-numeric-widen",
+  "-Ywarn-dead-code",
+  "-Ywarn-value-discard",
+  "-Ywarn-infer-any",
+  "-Ywarn-unused",
+  "-Ywarn-unused-import",
+  "-Xlint:missing-interpolator",
+  "-g:vars"
+)
 
 scalacOptions in Compile ++= {
-  if (scalaVersion.value startsWith "2.10.") Nil
-  else Seq("-Ywarn-unused", "-Xlint:missing-interpolator")
+  if (!scalaVersion.value.startsWith("2.11.")) Nil
+  else Seq(
+    "-Yconst-opt",
+    "-Yclosure-elim",
+    "-Ydead-code",
+    "-Yopt:_"
+  )
+}
+
+scalacOptions in (Compile, console) ~= {
+  _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
+}
+
+scalacOptions in (Test, console) ~= {
+  _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
 }
 
 scalacOptions in (Compile, doc) ++= Seq(
   "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
   /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
   Opts.doc.title("ReactiveMongo Play JSON API") ++
-  Opts.doc.version(nextRelease)
+  Opts.doc.version(Release.major.value)
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -46,7 +67,7 @@ val playVer = Def.setting[String] {
 }
 
 libraryDependencies ++= Seq(
-  "org.reactivemongo" %% "reactivemongo" % buildVersion % "provided" cross CrossVersion.binary,
+  "org.reactivemongo" %% "reactivemongo" % version.value % "provided" cross CrossVersion.binary,
   "com.typesafe.play" %% "play-json" % playVer.value % "provided" cross CrossVersion.binary)
 
 // Test
@@ -187,5 +208,10 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
+val scapegoatSettings = Seq(
+  scapegoatVersion := "1.3.0",
+  scapegoatReports := Seq("xml")
+)
+
 lazy val root = (project in file(".")).
-  settings(publishSettings: _*)
+  settings(publishSettings ++ Release.settings)

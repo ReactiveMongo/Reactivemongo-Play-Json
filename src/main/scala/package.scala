@@ -621,6 +621,7 @@ sealed trait ImplicitBSONHandlers extends BSONFormats {
 }
 
 sealed trait LowerImplicitBSONHandlers {
+  import scala.language.implicitConversions
   import reactivemongo.bson.{ BSONElement, Producer }
 
   implicit def jsWriter[A <: JsValue, B <: BSONValue] = new BSONWriter[A, B] {
