@@ -15,6 +15,8 @@
  */
 package reactivemongo.play.json
 
+import java.util.Base64
+
 import scala.util.{ Failure, Success, Try }
 
 import play.api.libs.json.{
@@ -427,6 +429,17 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     val partialReads: PartialFunction[JsValue, JsResult[BSONBinary]] = {
       case JsString(str) => try {
         JsSuccess(BSONBinary(Converters.str2Hex(str), Subtype.UserDefinedSubtype))
+      } catch {
+        case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
+      }
+      case obj: JsObject if obj.fields.exists {
+        case (str, v: JsString) if str == f"$$type" && v.value == "03" => true
+        case _ => false
+      } && obj.fields.exists {
+        case (str, _: JsString) if str == f"$$binary" => true
+        case _                                        => false
+      } => try {
+        JsSuccess(BSONBinary(Base64.getDecoder().decode((obj \ f"$$binary").as[String]), Subtype.OldUuidSubtype))
       } catch {
         case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
       }

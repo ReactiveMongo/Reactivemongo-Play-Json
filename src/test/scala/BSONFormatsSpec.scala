@@ -220,12 +220,31 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       }
     }
 
+    f"""convert old uuid binary  { "$$binary" : "A8Q0VwAAABB/xOHh4RhsqA==", "$$type" : "03" }""" in {
+      val jsonTs = Json.parse(f"""{ "$$binary" : "A8Q0VwAAABB/xOHh4RhsqA==", "$$type" : "03" }""")
+
+      Json.fromJson[BSONBinary](jsonTs) must beLike {
+        case JsSuccess(bsonBinary, _) => bsonBinary.subtype must_== Subtype.OldUuidSubtype
+      }
+
+    }
+
     f"""convert extended JSON { "$$maxKey": 1 }""" in {
       val jsonTs = Json.parse(f"""{ "$$maxKey": 1 }""")
 
       Json.fromJson[BSONMaxKey.type](jsonTs) must beLike {
         case JsSuccess(mk, _) => mk must_== BSONMaxKey
       }
+    }
+
+    f"""convert a doc and nested docs with bson binary uuids""" in {
+      val jsonTs = Json.parse(f"""{"_id" : { "$$oid" : "5877f31906033b1f1cfd4a32" },"lmd" : { "$$date" : 1484256025619 }, "mch" : { "id" : { "$$binary" : "IJRmSrxd0UeJDnqEqjiIOQ==", "$$type" : "03" }, "name" : "8295R", "serialNumber" : " "  }}""")
+
+      Json.fromJson[BSONDocument](jsonTs) must beLike {
+        case JsSuccess(v, _) =>
+          v.getAs[BSONDocument]("mch").flatMap(_.getAs[BSONBinary]("id")).map(Json.toJson(_)) must beSome
+      }
+
     }
   }
 }
