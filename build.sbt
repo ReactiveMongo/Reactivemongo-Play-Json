@@ -16,7 +16,7 @@ scalacOptions ++= Seq(
   "-unchecked",
   "-deprecation",
   "-feature",
-  //"-Xfatal-warnings",
+  "-Xfatal-warnings",
   "-Xlint",
   "-Ywarn-numeric-widen",
   "-Ywarn-dead-code",
@@ -24,7 +24,6 @@ scalacOptions ++= Seq(
   "-Ywarn-infer-any",
   "-Ywarn-unused",
   "-Ywarn-unused-import",
-  "-Xlint:missing-interpolator",
   "-g:vars"
 )
 
@@ -36,6 +35,10 @@ scalacOptions in Compile ++= {
     "-Ydead-code",
     "-Yopt:_"
   )
+}
+
+scalacOptions in Test ~= {
+  _.filterNot(_ == "-Xfatal-warnings")
 }
 
 scalacOptions in (Compile, console) ~= {

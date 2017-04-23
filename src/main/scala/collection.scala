@@ -43,7 +43,11 @@ import reactivemongo.api.collections.{
 import reactivemongo.api.commands.{ WriteConcern, WriteResult }
 import reactivemongo.util.option
 
-import reactivemongo.play.json.{ BSONFormats, JSONSerializationPack }
+import reactivemongo.play.json.{
+  BSONFormats,
+  JSONException,
+  JSONSerializationPack
+}
 
 /**
  * A Collection that interacts with the Play JSON library, using `Reads` and `Writes`.
@@ -83,7 +87,6 @@ object JSONBatchCommands
   }
   import reactivemongo.core.protocol.MongoWireVersion
   import reactivemongo.play.json.readOpt
-  import reactivemongo.core.protocol.MongoWireVersion
   import reactivemongo.play.json.commands.CommonImplicits
 
   val pack = JSONSerializationPack
@@ -343,16 +346,21 @@ object JSONBatchCommands
     JSONFindAndModifyImplicits
   }
   val FindAndModifyCommand = JSONFindAndModifyCommand
-  implicit def FindAndModifyWriter = JSONFindAndModifyImplicits.FindAndModifyWriter
-  implicit def FindAndModifyReader = JSONFindAndModifyImplicits.FindAndModifyResultReader
+
+  implicit val FindAndModifyWriter =
+    JSONFindAndModifyImplicits.FindAndModifyWriter
+
+  implicit val FindAndModifyReader =
+    JSONFindAndModifyImplicits.FindAndModifyResultReader
 
   import reactivemongo.play.json.commands.{
     JSONAggregationFramework,
     JSONAggregationImplicits
   }
   val AggregationFramework = JSONAggregationFramework
-  implicit def AggregateWriter = JSONAggregationImplicits.AggregateWriter
-  implicit def AggregateReader =
+
+  implicit val AggregateWriter = JSONAggregationImplicits.AggregateWriter
+  implicit val AggregateReader =
     JSONAggregationImplicits.AggregationResultReader
 
 }
@@ -423,7 +431,7 @@ final class JSONCollection(
     writer.writes(doc) match {
       case d @ JsObject(_) => save(d, writeConcern)
       case _ =>
-        Future.failed[WriteResult](new Exception("cannot write object"))
+        Future.failed[WriteResult](new JSONException("cannot write object"))
     }
 }
 
@@ -473,7 +481,8 @@ case class JSONQueryBuilder(
       })
     }
 
-    val optional = List[Option[(String, JsValue)]](
+    @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+    @inline def optional = List[Option[(String, JsValue)]](
       queryOption.map { f"$$query" -> Json.toJson(_) },
       sortOption.map { f"$$orderby" -> Json.toJson(_) },
       hintOption.map { f"$$hint" -> Json.toJson(_) },
@@ -483,7 +492,10 @@ case class JSONQueryBuilder(
       option(snapshotFlag, f"$$snapshot" -> Json.toJson(true))
     ).flatten
 
-    JsObject((optional :+ (f"$$readPreference" -> pref)))
+    @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+    @inline def merged = JsObject((f"$$readPreference" -> pref) :: optional)
+
+    merged
   }
 }
 
@@ -579,20 +591,22 @@ object Helpers {
 
   private def documentProducer(collection: JSONCollection, documents: => InputStream)(implicit ec: ExecutionContext): Future[List[collection.ImplicitlyDocumentProducer]] = {
     lazy val in = documents
+
+    @SuppressWarnings(Array("CatchException"))
     def docs: Future[List[JsObject]] = try {
       Json.parse(in).validate[List[JsObject]] match {
         case JsSuccess(os, _) => Future.successful(os)
-        case err @ JsError(_) => Future.failed(new Exception(
+        case err @ JsError(_) => Future.failed(new JSONException(
           Json.stringify(JsError toJson err)
         ))
       }
     } catch {
-      case reason: Throwable => Future.failed(reason)
+      case reason: Exception => Future.failed(reason)
     } finally {
       try {
         in.close()
       } catch {
-        case _: Throwable => ()
+        case _: Exception => ()
       }
     }
 

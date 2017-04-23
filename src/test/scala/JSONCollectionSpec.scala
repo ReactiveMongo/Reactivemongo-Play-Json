@@ -122,7 +122,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
       )
 
       builder.merge(ReadPreference.Primary).toString.
-        aka("merged") must beEqualTo("""{"$query":{"username":"John Doe"},"$readPreference":{"mode":"primary"}}""")
+        aka("merged") must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"}}""")
     }
 
     "write an JsObject with only defined options" in { implicit ee: EE =>
@@ -132,10 +132,10 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         queryOption = Option(Json.obj("username" -> "John Doe")),
         sortOption = Option(Json.obj("age" -> 1))
       )
-      builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$readPreference":{"mode":"primary"}}""")
+      builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1}}""")
 
       val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
-      builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age","$readPreference":{"mode":"primary"}}""")
+      builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age"}""")
     }
   }
 

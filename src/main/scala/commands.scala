@@ -41,10 +41,12 @@ object CommonImplicits {
   }
 }
 
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 trait JSONCommandError extends CommandError {
   def originalDocument: JsObject
 }
 
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 case class DefaultJSONCommandError(
     code: Option[Int],
     errmsg: Option[String],

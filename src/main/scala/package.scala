@@ -86,6 +86,7 @@ object `package` extends ImplicitBSONHandlers {
   }
 }
 
+@SuppressWarnings(Array("NullAssignment"))
 class JSONException(message: String, cause: Throwable = null)
   extends RuntimeException(message, cause)
 
@@ -115,19 +116,34 @@ object BSONFormats extends BSONFormats {
  * JSON Formats for BSONValues.
  */
 sealed trait BSONFormats extends LowerImplicitBSONHandlers {
-  trait PartialFormat[T <: BSONValue] extends Format[T] {
+  trait PartialReads[T <: BSONValue] extends Reads[T] {
     def partialReads: PartialFunction[JsValue, JsResult[T]]
+
+    def reads(json: JsValue) = partialReads.lift(json).
+      getOrElse(JsError(s"unhandled json value: $json"))
+  }
+
+  trait PartialWrites[T <: BSONValue] extends Writes[T] {
     def partialWrites: PartialFunction[BSONValue, JsValue]
 
     def writes(t: T): JsValue = partialWrites(t)
-    def reads(json: JsValue) = partialReads.lift(json).getOrElse(JsError(s"unhandled json value: $json"))
   }
 
+  trait PartialFormat[T <: BSONValue]
+    extends Format[T] with PartialReads[T] with PartialWrites[T]
+
   implicit object BSONDoubleFormat extends PartialFormat[BSONDouble] {
-    private val jsNaN = Json.obj(f"$$double" -> "NaN")
+    private val jsNaN = {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json = Json.obj(f"$$double" -> "NaN")
+
+      json
+    }
 
     val partialReads: PartialFunction[JsValue, JsResult[BSONDouble]] = {
-      case JsNumber(f)        => JsSuccess(BSONDouble(f.toDouble))
+      case JsNumber(n) if !n.ulp.isWhole =>
+        JsSuccess(BSONDouble(n.toDouble))
+
       case DoubleValue(value) => JsSuccess(BSONDouble(value))
     }
 
@@ -137,6 +153,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     private object DoubleValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[Double] =
         (obj \ f"$$double").asOpt[JsNumber].map(_.value.toDouble)
     }
@@ -154,12 +171,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   class BSONDocumentFormat(toBSON: JsValue => JsResult[BSONValue], toJSON: BSONValue => JsValue) extends PartialFormat[BSONDocument] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONDocument]] = {
-      case obj @ JsObject(_) =>
-        try {
+      @SuppressWarnings(Array("CatchException"))
+      @inline def reads: PartialFunction[JsValue, JsResult[BSONDocument]] = {
+        case obj @ JsObject(_) => try {
           JsSuccess(bson(obj))
         } catch {
-          case e: Throwable => JsError(e.getMessage)
+          case e: Exception => JsError(e.getMessage)
         }
+      }
+
+      reads
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -184,17 +205,22 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   implicit object BSONDocumentFormat extends BSONDocumentFormat(toBSON, toJSON)
   class BSONArrayFormat(toBSON: JsValue => JsResult[BSONValue], toJSON: BSONValue => JsValue) extends PartialFormat[BSONArray] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONArray]] = {
-      case arr: JsArray =>
-        try {
-          JsSuccess(BSONArray(arr.value.map { value =>
-            toBSON(value) match {
-              case JsSuccess(bson, _) => bson
-              case JsError(err)       => throw new JSONException(err.toString)
-            }
-          }))
-        } catch {
-          case e: Throwable => JsError(e.getMessage)
-        }
+      @SuppressWarnings(Array("CatchException", "LooksLikeInterpolatedString"))
+      @inline def bson: PartialFunction[JsValue, JsResult[BSONArray]] = {
+        case arr @ JsArray(_) =>
+          try {
+            JsSuccess(BSONArray(arr.value.map { value =>
+              toBSON(value) match {
+                case JsSuccess(bson, _) => bson
+                case JsError(err)       => throw new JSONException(err.toString)
+              }
+            }))
+          } catch {
+            case e: Exception => JsError(e.getMessage)
+          }
+      }
+
+      bson
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -213,10 +239,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case oid: BSONObjectID => Json.obj(f"$$oid" -> oid.stringify)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case oid: BSONObjectID => Json.obj(f"$$oid" -> oid.stringify)
+      }
+
+      json
     }
 
     private object OidValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$oid").asOpt[String]
     }
@@ -228,10 +260,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONJavaScript(code) => Json.obj(f"$$javascript" -> code)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case BSONJavaScript(code) => Json.obj(f"$$javascript" -> code)
+      }
+
+      json
     }
 
     private object JavascriptValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$javascript").asOpt[String]
     }
@@ -253,10 +291,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case dt: BSONDateTime => Json.obj(f"$$date" -> dt.value)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case dt: BSONDateTime => Json.obj(f"$$date" -> dt.value)
+      }
+
+      json
     }
 
     private object DateValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[Long] =
         (obj \ f"$$date").asOpt[JsValue].flatMap {
           case n @ JsNumber(_) => n.asOpt[Long]
@@ -272,20 +316,27 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case ts: BSONTimestamp => Json.obj(
-        f"$$time" -> (ts.value >>> 32), f"$$i" -> ts.value.toInt,
-        f"$$timestamp" -> Json.obj(
-          "t" -> (ts.value >>> 32), "i" -> ts.value.toInt
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      def json: PartialFunction[BSONValue, JsValue] = {
+        case ts: BSONTimestamp => Json.obj(
+          f"$$time" -> (ts.value >>> 32), f"$$i" -> ts.value.toInt,
+          f"$$timestamp" -> Json.obj(
+            "t" -> (ts.value >>> 32), "i" -> ts.value.toInt
+          )
         )
-      )
+      }
+
+      json
     }
 
     private object TimeValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[(Long, Int)] = (for {
         time <- (obj \ f"$$time").asOpt[Long]
         i <- (obj \ f"$$i").asOpt[Int]
       } yield (time, i)).orElse(legacy(obj))
 
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def legacy(obj: JsObject): Option[(Long, Int)] = for {
         time <- (obj \ f"$$timestamp" \ "t").asOpt[Long]
         i <- (obj \ f"$$timestamp" \ "i").asOpt[Int]
@@ -296,6 +347,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   implicit object BSONUndefinedFormat
       extends PartialFormat[BSONUndefined.type] {
     private object Undefined {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[BSONUndefined.type] =
         obj.value.get(f"$$undefined") match {
           case Some(JsBoolean(true)) => Some(BSONUndefined)
@@ -308,35 +360,58 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONUndefined => Json.obj(f"$$undefined" -> true)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case BSONUndefined => Json.obj(f"$$undefined" -> true)
+      }
+
+      json
     }
   }
 
   implicit object BSONRegexFormat extends PartialFormat[BSONRegex] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONRegex]] = {
-      case js: JsObject if (
-        js.values.size == 1 && js.fields.headOption.exists(_._1 == f"$$regex")
-      ) => {
-        js.fields.headOption.flatMap(_._2.asOpt[String]).
-          map(rx => JsSuccess(BSONRegex(rx, ""))).
-          getOrElse(JsError(__ \ f"$$regex", "string expected"))
+      @SuppressWarnings(Array(
+        "ExistsSimplifableToContains", "LooksLikeInterpolatedString"
+      ))
+      @inline def bson: PartialFunction[JsValue, JsResult[BSONRegex]] = {
+        case js @ JsObject(fields) if (
+          js.values.size == 1 && fields.headOption.exists(_._1 == f"$$regex")
+        ) => {
+          fields.headOption.flatMap(_._2.asOpt[String]).
+            map(rx => JsSuccess(BSONRegex(rx, ""))).
+            getOrElse(JsError(__ \ f"$$regex", "string expected"))
+        }
+
+        case js @ JsObject(_) if (
+          js.value.size == 2 && js.value.exists(_._1 == f"$$regex") &&
+          js.value.exists(_._1 == f"$$options")
+        ) => {
+          val rx = (js \ f"$$regex").asOpt[String]
+          val opts = (js \ f"$$options").asOpt[String]
+
+          (rx, opts) match {
+            case (Some(rx), Some(opts)) => JsSuccess(BSONRegex(rx, opts))
+            case (None, Some(_))        => JsError(__ \ f"$$regex", "string expected")
+            case (Some(_), None)        => JsError(__ \ f"$$options", "string expected")
+            case _                      => JsError(__ \ f"$$regex", "string expected") ++ JsError(__ \ f"$$options", "string expected")
+          }
+        }
       }
 
-      case js: JsObject if js.value.size == 2 && js.value.exists(_._1 == f"$$regex") && js.value.exists(_._1 == f"$$options") =>
-        val rx = (js \ f"$$regex").asOpt[String]
-        val opts = (js \ f"$$options").asOpt[String]
-        (rx, opts) match {
-          case (Some(rx), Some(opts)) => JsSuccess(BSONRegex(rx, opts))
-          case (None, Some(_))        => JsError(__ \ f"$$regex", "string expected")
-          case (Some(_), None)        => JsError(__ \ f"$$options", "string expected")
-          case _                      => JsError(__ \ f"$$regex", "string expected") ++ JsError(__ \ f"$$options", "string expected")
-        }
+      bson
     }
+
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case rx: BSONRegex =>
-        if (rx.flags.isEmpty)
-          Json.obj(f"$$regex" -> rx.value)
-        else Json.obj(f"$$regex" -> rx.value, f"$$options" -> rx.flags)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case rx: BSONRegex =>
+          if (rx.flags.isEmpty)
+            Json.obj(f"$$regex" -> rx.value)
+          else Json.obj(f"$$regex" -> rx.value, f"$$options" -> rx.flags)
+      }
+
+      json
     }
   }
 
@@ -344,6 +419,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       extends PartialFormat[BSONMinKey.type] {
     private object MinKey {
       private val JsOne = JsNumber(1)
+
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[BSONMinKey.type] =
         obj.value.get(f"$$minKey") match {
           case Some(JsOne)           => Some(BSONMinKey)
@@ -357,7 +434,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONMinKey => Json.obj(f"$$minKey" -> 1)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case BSONMinKey => Json.obj(f"$$minKey" -> 1)
+      }
+
+      json
     }
   }
 
@@ -365,6 +447,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       extends PartialFormat[BSONMaxKey.type] {
     private object MaxKey {
       private val JsOne = JsNumber(1)
+
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[BSONMaxKey.type] =
         obj.value.get(f"$$maxKey") match {
           case Some(JsOne)           => Some(BSONMaxKey)
@@ -378,7 +462,12 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONMaxKey => Json.obj(f"$$maxKey" -> 1)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case BSONMaxKey => Json.obj(f"$$maxKey" -> 1)
+      }
+
+      json
     }
   }
 
@@ -393,8 +482,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONIntegerFormat extends PartialFormat[BSONInteger] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONInteger]] = {
-      case JsNumber(i)     => JsSuccess(BSONInteger(i.toInt))
-      case IntValue(value) => JsSuccess(BSONInteger(value))
+      case JsNumber(n) if n.isValidInt => JsSuccess(BSONInteger(n.toInt))
+      case IntValue(value)             => JsSuccess(BSONInteger(value))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -402,6 +491,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     private object IntValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[Int] =
         (obj \ f"$$int").asOpt[JsNumber].map(_.value.toInt)
     }
@@ -418,6 +508,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     private object LongValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[Long] =
         (obj \ f"$$long").asOpt[JsNumber].map(_.value.toLong)
     }
@@ -425,27 +516,48 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONBinaryFormat extends PartialFormat[BSONBinary] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONBinary]] = {
-      case JsString(str) => try {
-        JsSuccess(BSONBinary(Converters.str2Hex(str), Subtype.UserDefinedSubtype))
-      } catch {
-        case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
+      @SuppressWarnings(Array("CatchException", "LooksLikeInterpolatedString"))
+      @inline def bson: PartialFunction[JsValue, JsResult[BSONBinary]] = {
+        case JsString(str) => try {
+          JsSuccess(BSONBinary(
+            Converters.str2Hex(str), Subtype.UserDefinedSubtype
+          ))
+        } catch {
+          case e: Exception => JsError(
+            s"error deserializing hex ${e.getMessage}"
+          )
+        }
+
+        case obj @ JsObject(fields) if fields.exists {
+          case (str, _: JsString) if str == f"$$binary" => true
+          case _                                        => false
+        } => try {
+          JsSuccess(BSONBinary(Converters.str2Hex((obj \ f"$$binary").as[String]), Subtype.UserDefinedSubtype))
+        } catch {
+          case e: Exception => JsError(
+            s"error deserializing hex ${e.getMessage}"
+          )
+        }
       }
-      case obj: JsObject if obj.fields.exists {
-        case (str, _: JsString) if str == f"$$binary" => true
-        case _                                        => false
-      } => try {
-        JsSuccess(BSONBinary(Converters.str2Hex((obj \ f"$$binary").as[String]), Subtype.UserDefinedSubtype))
-      } catch {
-        case e: Throwable => JsError(s"error deserializing hex ${e.getMessage}")
-      }
+
+      bson
     }
+
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case binary: BSONBinary =>
-        val remaining = binary.value.readable()
-        Json.obj(
-          f"$$binary" -> Converters.hex2Str(binary.value.slice(remaining).readArray(remaining)),
-          f"$$type" -> Converters.hex2Str(Array(binary.subtype.value.toByte))
-        )
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case binary: BSONBinary =>
+          val remaining = binary.value.readable()
+
+          Json.obj(
+            f"$$binary" -> Converters.hex2Str(
+              binary.value.slice(remaining).readArray(remaining)
+            ),
+            f"$$type" -> Converters.hex2Str(Array(binary.subtype.value.toByte))
+          )
+      }
+
+      json
     }
   }
 
@@ -455,10 +567,16 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case BSONSymbol(s) => Json.obj(f"$$symbol" -> s)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case BSONSymbol(s) => Json.obj(f"$$symbol" -> s)
+      }
+
+      json
     }
 
     private object SymbolValue {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$symbol").asOpt[String]
     }
@@ -470,50 +588,100 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     case JsNumber(n)                   => JsSuccess(BSONLong(n.toLong))
   }
 
-  def toBSON(json: JsValue): JsResult[BSONValue] =
-    BSONStringFormat.partialReads.
-      orElse(BSONObjectIDFormat.partialReads).
-      orElse(BSONJavaScriptFormat.partialReads).
-      orElse(BSONDateTimeFormat.partialReads).
-      orElse(BSONTimestampFormat.partialReads).
-      orElse(BSONBinaryFormat.partialReads).
-      orElse(BSONRegexFormat.partialReads).
-      orElse(numberReads).
-      orElse(BSONBooleanFormat.partialReads).
-      orElse(BSONMinKeyFormat.partialReads).
-      orElse(BSONMaxKeyFormat.partialReads).
-      orElse(BSONNullFormat.partialReads).
-      orElse(BSONSymbolFormat.partialReads).
-      orElse(BSONArrayFormat.partialReads).
-      orElse(BSONDocumentFormat.partialReads).
-      orElse(BSONUndefinedFormat.partialReads).
+  def toBSON(json: JsValue): JsResult[BSONValue] = readAsBSONValue(json)
+
+  @SuppressWarnings(Array("MaxParameters"))
+  def readAsBSONValue(json: JsValue)(
+    implicit
+    string: PartialReads[BSONString],
+    objectID: PartialReads[BSONObjectID],
+    javascript: PartialReads[BSONJavaScript],
+    dateTime: PartialReads[BSONDateTime],
+    timestamp: PartialReads[BSONTimestamp],
+    binary: PartialReads[BSONBinary],
+    regex: PartialReads[BSONRegex],
+    double: PartialReads[BSONDouble],
+    integer: PartialReads[BSONInteger],
+    long: PartialReads[BSONLong],
+    boolean: PartialReads[BSONBoolean],
+    minKey: PartialReads[BSONMinKey.type],
+    maxKey: PartialReads[BSONMaxKey.type],
+    bnull: PartialReads[BSONNull.type],
+    symbol: PartialReads[BSONSymbol],
+    array: PartialReads[BSONArray],
+    doc: PartialReads[BSONDocument],
+    undef: PartialReads[BSONUndefined.type]
+  ): JsResult[BSONValue] =
+    string.partialReads.
+      orElse(objectID.partialReads).
+      orElse(javascript.partialReads).
+      orElse(dateTime.partialReads).
+      orElse(timestamp.partialReads).
+      orElse(binary.partialReads).
+      orElse(regex.partialReads).
+      orElse(double.partialReads).
+      orElse(integer.partialReads).
+      orElse(long.partialReads).
+      orElse(boolean.partialReads).
+      orElse(minKey.partialReads).
+      orElse(maxKey.partialReads).
+      orElse(bnull.partialReads).
+      orElse(symbol.partialReads).
+      orElse(array.partialReads).
+      orElse(doc.partialReads).
+      orElse(undef.partialReads).
       lift(json).getOrElse(JsError(s"unhandled json value: $json"))
 
-  def toJSON(bson: BSONValue): JsValue = BSONObjectIDFormat.partialWrites.
-    orElse(BSONJavaScriptFormat.partialWrites).
-    orElse(BSONDateTimeFormat.partialWrites).
-    orElse(BSONTimestampFormat.partialWrites).
-    orElse(BSONBinaryFormat.partialWrites).
-    orElse(BSONRegexFormat.partialWrites).
-    orElse(BSONDoubleFormat.partialWrites).
-    orElse(BSONIntegerFormat.partialWrites).
-    orElse(BSONLongFormat.partialWrites).
-    orElse(BSONBooleanFormat.partialWrites).
-    orElse(BSONMinKeyFormat.partialWrites).
-    orElse(BSONMaxKeyFormat.partialWrites).
-    orElse(BSONNullFormat.partialWrites).
-    orElse(BSONStringFormat.partialWrites).
-    orElse(BSONSymbolFormat.partialWrites).
-    orElse(BSONArrayFormat.partialWrites).
-    orElse(BSONDocumentFormat.partialWrites).
-    orElse(BSONUndefinedFormat.partialWrites).
-    lift(bson).getOrElse(throw new JSONException(s"Unhandled json value: $bson"))
+  def toJSON(bson: BSONValue): JsValue = writeAsJsValue(bson)
+
+  @SuppressWarnings(Array("MaxParameters"))
+  def writeAsJsValue(bson: BSONValue)(
+    implicit
+    string: PartialWrites[BSONString],
+    objectID: PartialWrites[BSONObjectID],
+    javascript: PartialWrites[BSONJavaScript],
+    dateTime: PartialWrites[BSONDateTime],
+    timestamp: PartialWrites[BSONTimestamp],
+    binary: PartialWrites[BSONBinary],
+    regex: PartialWrites[BSONRegex],
+    double: PartialWrites[BSONDouble],
+    integer: PartialWrites[BSONInteger],
+    long: PartialWrites[BSONLong],
+    boolean: PartialWrites[BSONBoolean],
+    minKey: PartialWrites[BSONMinKey.type],
+    maxKey: PartialWrites[BSONMaxKey.type],
+    bnull: PartialWrites[BSONNull.type],
+    symbol: PartialWrites[BSONSymbol],
+    array: PartialWrites[BSONArray],
+    doc: PartialWrites[BSONDocument],
+    undef: PartialWrites[BSONUndefined.type]
+  ): JsValue = string.partialWrites.
+    orElse(objectID.partialWrites).
+    orElse(javascript.partialWrites).
+    orElse(dateTime.partialWrites).
+    orElse(timestamp.partialWrites).
+    orElse(binary.partialWrites).
+    orElse(regex.partialWrites).
+    orElse(double.partialWrites).
+    orElse(integer.partialWrites).
+    orElse(long.partialWrites).
+    orElse(boolean.partialWrites).
+    orElse(minKey.partialWrites).
+    orElse(maxKey.partialWrites).
+    orElse(bnull.partialWrites).
+    orElse(symbol.partialWrites).
+    orElse(array.partialWrites).
+    orElse(doc.partialWrites).
+    orElse(undef.partialWrites).
+    lift(bson).getOrElse(
+      throw new JSONException(s"Unhandled json value: $bson")
+    )
 }
 
 object Writers {
   implicit class JsPathMongo(val jp: JsPath) extends AnyVal {
-    def writemongo[A](implicit writer: Writes[A]): OWrites[A] = {
-      OWrites[A] { (o: A) =>
+    def writemongo[A](implicit writer: Writes[A]): OWrites[A] =
+      OWrites[A] { o =>
         val newPath = jp.path.flatMap {
           case e: KeyPathNode     => Some(e.key)
           case e: RecursiveSearch => Some(s"$$.${e.key}")
@@ -522,14 +690,13 @@ object Writers {
 
         val orig = writer.writes(o)
         orig match {
-          case JsObject(e) =>
-            JsObject(e.flatMap {
-              case (k, v) => Seq(s"${newPath}.$k" -> v)
-            })
+          case JsObject(e) => JsObject(e.flatMap {
+            case (k, v) => Seq(s"${newPath}.$k" -> v)
+          })
+
           case e: JsValue => JsObject(Seq(newPath -> e))
         }
       }
-    }
   }
 }
 
@@ -571,7 +738,9 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
       buffer
     }
 
-    case JsSuccess(v, _) => sys.error(s"fails to write the document: $document; unexpected conversion $v")
+    case JsSuccess(v, _) => sys.error(
+      s"fails to write the document: $document; unexpected conversion $v"
+    )
   }
 
   def readFromBuffer(buffer: ReadableBuffer): Document =
@@ -628,10 +797,14 @@ sealed trait LowerImplicitBSONHandlers {
   import scala.language.implicitConversions
   import reactivemongo.bson.{ BSONElement, Producer }
 
-  implicit def jsWriter[A <: JsValue, B <: BSONValue] = new BSONWriter[A, B] {
-    def write(js: A): B = BSONFormats.toBSON(js).get.asInstanceOf[B]
+  implicit def jsWriter[A <: JsValue, B <: BSONValue] = BSONWriter[A, B] { js =>
+    BSONFormats.toBSON(js) match {
+      case JsSuccess(b: B @unchecked, _) => b
+      case res                           => sys.error(s"fails to convert to BSON: $res")
+    }
   }
 
+  @SuppressWarnings(Array("MethodNames"))
   implicit def JsFieldBSONElementProducer[T <: JsValue](jsField: (String, T)): Producer[BSONElement] = Producer.element2Producer(BSONElement(jsField._1, BSONFormats.toBSON(jsField._2).get))
 
   implicit object BSONValueReads extends Reads[BSONValue] {

@@ -34,7 +34,7 @@ object JSONFindAndModifyImplicits {
   implicit object FindAndModifyResultReader
       extends DealingWithGenericCommandErrorsReader[FindAndModifyResult] {
 
-    def readResult(result: JsObject): FindAndModifyResult = try {
+    def readResult(result: JsObject): FindAndModifyResult =
       FindAndModifyResult(
         (result \ "lastErrorObject").asOpt[JsObject].map { doc =>
           UpdateLastError(
@@ -47,11 +47,6 @@ object JSONFindAndModifyImplicits {
         },
         (result \ "value").asOpt[JsObject]
       )
-    } catch {
-      case e: Throwable =>
-        e.printStackTrace()
-        sys.error("Error")
-    }
   }
 
   implicit object FindAndModifyWriter
