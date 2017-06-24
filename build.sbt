@@ -41,6 +41,8 @@ scalacOptions in Test ~= {
   _.filterNot(_ == "-Xfatal-warnings")
 }
 
+scalacOptions in (Compile, doc) := (scalacOptions in Test).value
+
 scalacOptions in (Compile, console) ~= {
   _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
 }
@@ -60,7 +62,7 @@ resolvers ++= Seq(
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
 
 val playLower = "2.5.0"
-val playUpper = "2.6.0-M1"
+val playUpper = "2.6.0"
 
 val playVer = Def.setting[String] {
   sys.env.get("PLAY_VERSION").getOrElse {
