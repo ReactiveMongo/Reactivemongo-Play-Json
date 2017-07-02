@@ -5,9 +5,16 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.11.8"
+scalaVersion in ThisBuild := "2.11.11"
 
-crossScalaVersions in ThisBuild := Seq("2.11.8", "2.12.1")
+version ~= { ver =>
+  sys.env.get("RELEASE_SUFFIX") match {
+    case Some(suffix) => s"${ver}-${suffix}"
+    case _ => ver
+  }
+}
+
+crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
 
 crossVersion in ThisBuild := CrossVersion.binary
 
@@ -72,7 +79,7 @@ val playVer = Def.setting[String] {
 }
 
 libraryDependencies ++= Seq(
-  "org.reactivemongo" %% "reactivemongo" % version.value % "provided" cross CrossVersion.binary,
+  "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % "provided" cross CrossVersion.binary,
   "com.typesafe.play" %% "play-json" % playVer.value % "provided" cross CrossVersion.binary)
 
 // Test
