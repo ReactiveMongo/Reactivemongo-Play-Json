@@ -69,7 +69,7 @@ resolvers ++= Seq(
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
 
 val playLower = "2.5.0"
-val playUpper = "2.6.0"
+val playUpper = "2.6.1"
 
 val playVer = Def.setting[String] {
   sys.env.get("PLAY_VERSION").getOrElse {
