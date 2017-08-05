@@ -1,8 +1,17 @@
+import scala.util.{ Failure, Try }
+
 import scala.concurrent._, duration._
+
+import reactivemongo.api.commands.{
+  CommandError,
+  UnitBox,
+  WriteResult
+}
 
 import reactivemongo.core.errors.DetailedDatabaseException
 
 import org.specs2.concurrent.{ ExecutionEnv => EE }
+import org.specs2.specification.core.Fragments
 
 class JSONCollectionSpec extends org.specs2.mutable.Specification {
   "JSON collection" title
@@ -10,10 +19,9 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   sequential
 
   import Common._
-  import play.api.libs.json.{ JsObject, _ }
+  import play.api.libs.json._
   import reactivemongo.play.json._
   import reactivemongo.play.json.collection.{ JSONCollection, JSONQueryBuilder }
-  import reactivemongo.api.commands.WriteResult
   import reactivemongo.api.{ FailoverStrategy, ReadPreference }
   import reactivemongo.bson._
 
@@ -125,17 +133,23 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         aka("merged") must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"}}""")
     }
 
-    "write an JsObject with only defined options" in { implicit ee: EE =>
+    "write an JsObject with only defined options" >> {
       val builder1 = JSONQueryBuilder(
         collection = collection,
         failover = new FailoverStrategy(),
         queryOption = Option(Json.obj("username" -> "John Doe")),
         sortOption = Option(Json.obj("age" -> 1))
       )
-      builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1}}""")
 
-      val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
-      builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age"}""")
+      "with query builder #1" in { implicit ee: EE =>
+        builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1}}""")
+      }
+
+      "with query builder #2" in { implicit ee: EE =>
+        val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
+
+        builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age"}""")
+      }
     }
   }
 
@@ -209,6 +223,46 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
           quiz.find(Json.obj()).cursor[JsObject]().collect[List]().
             map(_.map(Json.stringify).sorted) must beEqualTo(expected).
             await(0, timeout)
+        }
+    }
+  }
+
+  "Command result" should {
+    import reactivemongo.play.json.commands._
+
+    val mini = Json.obj("ok" -> Json.toJson(0))
+    val withCode = mini + ("code" -> Json.toJson(1))
+    val withErrmsg = mini + ("errmsg" -> Json.toJson("Foo"))
+    val full = withCode ++ withErrmsg
+
+    type Fixture = (JsObject, Boolean, Boolean)
+
+    val pack = JSONSerializationPack
+    val reader: pack.Reader[UnitBox.type] = CommonImplicits.UnitBoxReader
+
+    Fragments.foreach(Seq[Fixture](
+      (mini, false, false),
+      (withCode, true, false),
+      (withErrmsg, false, true),
+      (full, true, true)
+    )) {
+      case (origDoc, hasCode, hasErrmsg) =>
+        val res = Try(pack.deserialize[UnitBox.type](origDoc, reader))
+
+        val mustHasCode = if (!hasCode) ok else {
+          res must beLike {
+            case Failure(CommandError.Code(1)) => ok
+          }
+        }
+
+        val mustHasErrmsg = if (!hasErrmsg) ok else {
+          res must beLike {
+            case Failure(CommandError.Message("Foo")) => ok
+          }
+        }
+
+        s"represent CommandError from '${Json.stringify(origDoc)}'" in {
+          mustHasCode and mustHasErrmsg
         }
     }
   }

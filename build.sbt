@@ -69,7 +69,7 @@ resolvers ++= Seq(
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
 
 val playLower = "2.5.0"
-val playUpper = "2.6.1"
+val playUpper = "2.6.2"
 
 val playVer = Def.setting[String] {
   sys.env.get("PLAY_VERSION").getOrElse {
@@ -78,11 +78,24 @@ val playVer = Def.setting[String] {
   }
 }
 
+val playDir = Def.setting[String] {
+  if (playVer.value startsWith "2.6") "play-2.6"
+  else "play-upto2.5"
+}
+
+unmanagedSourceDirectories in Compile += {
+  (sourceDirectory in Compile).value / playDir.value
+}
+
 libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % "provided" cross CrossVersion.binary,
   "com.typesafe.play" %% "play-json" % playVer.value % "provided" cross CrossVersion.binary)
 
 // Test
+unmanagedSourceDirectories in Test += {
+  (sourceDirectory in Test).value / playDir.value
+}
+
 fork in Test := false
 
 testOptions in Test += Tests.Cleanup(cl => {
@@ -94,7 +107,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "3.8.6",
+  "org.specs2" %% "specs2-core" % "3.9.4",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI
@@ -127,7 +140,7 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
       } else if (/* time-compat exclusions: */
         flags.contains("PLAY_VERSION" -> playLower)) {
         List(
-          "    - scala: 2.12.1",
+          "    - scala: 2.12.2",
           s"      env: ${integrationVars(flags)}"
         )
       } else List.empty[String]

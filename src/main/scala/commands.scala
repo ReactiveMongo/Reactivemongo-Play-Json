@@ -27,6 +27,8 @@ import play.api.libs.json.{
   Reads
 }
 
+import reactivemongo.play.json.ValidationError
+
 import reactivemongo.api.ReadConcern
 import reactivemongo.api.commands.{ CommandError, UnitBox }
 
@@ -55,6 +57,21 @@ case class DefaultJSONCommandError(
   override def getMessage = s"CommandError[code=${code.getOrElse("<unknown>")}, errmsg=${errmsg.getOrElse("<unknown>")}, doc: ${originalDocument}]"
 }
 
+object JSONCommandError {
+  def unapply(error: JsError): Option[JSONCommandError] = error match {
+    case JsError(Seq((_, Seq(ValidationError(
+      ("errmsg" +: errmsg), args))))) => args match {
+      case Seq((doc @ JsObject(_)), code: Int) =>
+        Some(DefaultJSONCommandError(Some(code), errmsg.headOption, doc))
+
+      case Seq(doc @ JsObject(_)) =>
+        Some(DefaultJSONCommandError(None, errmsg.headOption, doc))
+    }
+
+    case _ => None
+  }
+}
+
 private[commands] trait DealingWithGenericCommandErrorsReader[A]
     extends Reads[A] {
 
@@ -63,11 +80,12 @@ private[commands] trait DealingWithGenericCommandErrorsReader[A]
   final def reads(json: JsValue): JsResult[A] = json match {
     case doc: JsObject => {
       if (!(doc \ "ok").asOpt[JsNumber].exists(_.value.toInt == 1)) {
-        JsError(new DefaultJSONCommandError(
-          code = (doc \ "code").asOpt[Int],
-          errmsg = (doc \ "errmsg").asOpt[String],
-          originalDocument = doc
-        ).getMessage())
+        val cause = ValidationError(
+          messages = "errmsg" +: (doc \ "errmsg").asOpt[String].toSeq,
+          args = doc +: (doc \ "code").asOpt[Int].toSeq
+        )
+
+        JsError(cause)
       } else JsSuccess(readResult(doc))
     }
 
