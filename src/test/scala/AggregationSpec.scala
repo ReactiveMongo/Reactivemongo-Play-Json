@@ -30,7 +30,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
   case class Location(lon: Double, lat: Double)
 
   case class ZipCode(_id: String, city: String, state: String,
-    population: Long, location: Location)
+      population: Long, location: Location)
 
   implicit val locationHandler = Json.format[Location]
   implicit val zipCodeHandler = Json.format[ZipCode]

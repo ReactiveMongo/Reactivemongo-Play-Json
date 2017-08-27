@@ -1,11 +1,15 @@
+import com.typesafe.tools.mima.core._, ProblemFilters._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifacts
+import com.typesafe.tools.mima.plugin.MimaKeys.{
+  mimaBinaryIssueFilters,
+  mimaPreviousArtifacts
+}
 
 organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.11.11"
+scalaVersion in ThisBuild := "2.12.3"
 
 version ~= { ver =>
   sys.env.get("RELEASE_SUFFIX") match {
@@ -16,7 +20,7 @@ version ~= { ver =>
   }
 }
 
-crossScalaVersions in ThisBuild := Seq("2.11.11", "2.12.2")
+crossScalaVersions in ThisBuild := Seq("2.11.11", scalaVersion.value)
 
 crossVersion in ThisBuild := CrossVersion.binary
 
@@ -155,8 +159,27 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
 // Publish
 val previousVersion = "0.12.0"
 val mimaSettings = mimaDefaultSettings ++ Seq(
-  previousArtifacts := Set(
-    organization.value %% moduleName.value % previousVersion)
+  mimaPreviousArtifacts := {
+    if (!scalaVersion.value.startsWith("2.12")) {
+      Set(organization.value %% moduleName.value % previousVersion)
+    } else {
+      Set.empty
+    }
+  },
+  mimaBinaryIssueFilters ++= {
+    Seq(
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "reactivemongo.play.json.BSONFormats.readAsBSONValue"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem](
+        "reactivemongo.play.json.BSONFormats.writeAsJsValue"),
+      ProblemFilters.exclude[UpdateForwarderBodyProblem](
+        "reactivemongo.play.json.BSONFormats#PartialFormat.reads"),
+      ProblemFilters.exclude[UpdateForwarderBodyProblem](
+        "reactivemongo.play.json.BSONFormats#PartialFormat.writes"),
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialWrites.reactivemongo$play$json$BSONFormats$PartialWrites$$$outer"),
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialReads.reactivemongo$play$json$BSONFormats$PartialReads$$$outer")
+    )
+  }
 )
 
 lazy val publishSettings = {
@@ -214,30 +237,28 @@ import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-scalariformSettings
+scalariformSettings(autoformat = true)
 
 ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(AlignParameters, false).
   setPreference(AlignSingleLineCaseStatements, true).
   setPreference(CompactControlReadability, false).
   setPreference(CompactStringConcatenation, false).
-  setPreference(DoubleIndentClassDeclaration, true).
+  setPreference(DoubleIndentConstructorArguments, true).
   setPreference(FormatXml, true).
   setPreference(IndentLocalDefs, false).
   setPreference(IndentPackageBlocks, true).
   setPreference(IndentSpaces, 2).
   setPreference(MultilineScaladocCommentsStartOnFirstLine, false).
   setPreference(PreserveSpaceBeforeArguments, false).
-  setPreference(PreserveDanglingCloseParenthesis, true).
+  setPreference(DanglingCloseParenthesis, Preserve).
   setPreference(RewriteArrowSymbols, false).
   setPreference(SpaceBeforeColon, false).
   setPreference(SpaceInsideBrackets, false).
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
-scapegoatVersion := "1.3.0"
-
-scapegoatReports := Seq("xml")
+Scapegoat.settings
 
 lazy val root = (project in file(".")).
   settings(publishSettings ++ Release.settings)

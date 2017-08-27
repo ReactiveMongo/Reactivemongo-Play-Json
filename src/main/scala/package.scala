@@ -345,7 +345,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   }
 
   implicit object BSONUndefinedFormat
-      extends PartialFormat[BSONUndefined.type] {
+    extends PartialFormat[BSONUndefined.type] {
     private object Undefined {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[BSONUndefined.type] =
@@ -416,7 +416,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   }
 
   implicit object BSONMinKeyFormat
-      extends PartialFormat[BSONMinKey.type] {
+    extends PartialFormat[BSONMinKey.type] {
     private object MinKey {
       private val JsOne = JsNumber(1)
 
@@ -444,7 +444,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   }
 
   implicit object BSONMaxKeyFormat
-      extends PartialFormat[BSONMaxKey.type] {
+    extends PartialFormat[BSONMaxKey.type] {
     private object MaxKey {
       private val JsOne = JsNumber(1)
 
@@ -710,7 +710,7 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
   type Writer[A] = OWrites[A]
   type Reader[A] = Reads[A]
   type NarrowValueReader[A] = Reads[A]
-  private[reactivemongo]type WidenValueReader[A] = Reads[A]
+  private[reactivemongo] type WidenValueReader[A] = Reads[A]
 
   object IdentityReader extends Reader[Document] {
     def reads(js: JsValue): JsResult[Document] = js match {
@@ -786,13 +786,13 @@ sealed trait ImplicitBSONHandlers extends BSONFormats {
   }
 
   implicit object BSONDocumentWrites
-      extends JSONSerializationPack.Writer[BSONDocument] {
+    extends JSONSerializationPack.Writer[BSONDocument] {
     def writes(bson: BSONDocument): JsObject =
       BSONFormats.BSONDocumentFormat.json(bson)
   }
 
   implicit object JsObjectDocumentWriter // Identity writer
-      extends JSONSerializationPack.Writer[JsObject] {
+    extends JSONSerializationPack.Writer[JsObject] {
     def writes(obj: JsObject): JSONSerializationPack.Document = obj
   }
 }

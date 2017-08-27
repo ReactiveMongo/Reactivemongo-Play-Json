@@ -10,6 +10,6 @@ object ValidationError {
   def unapply(underlying: VE): Option[(Seq[String], Seq[Any])] =
     underlying match {
       case VE(messages, args @ _*) => Some(messages -> args)
-      case _ => None
+      case _                       => None
     }
 }

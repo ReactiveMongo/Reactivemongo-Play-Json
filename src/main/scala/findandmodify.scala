@@ -24,7 +24,7 @@ import reactivemongo.api.commands.{
 import reactivemongo.play.json.JSONSerializationPack
 
 object JSONFindAndModifyCommand
-    extends FindAndModifyCommand[JSONSerializationPack.type] {
+  extends FindAndModifyCommand[JSONSerializationPack.type] {
   val pack: JSONSerializationPack.type = JSONSerializationPack
 }
 
@@ -32,7 +32,7 @@ object JSONFindAndModifyImplicits {
   import JSONFindAndModifyCommand._
 
   implicit object FindAndModifyResultReader
-      extends DealingWithGenericCommandErrorsReader[FindAndModifyResult] {
+    extends DealingWithGenericCommandErrorsReader[FindAndModifyResult] {
 
     def readResult(result: JsObject): FindAndModifyResult =
       FindAndModifyResult(
@@ -50,7 +50,7 @@ object JSONFindAndModifyImplicits {
   }
 
   implicit object FindAndModifyWriter
-      extends OWrites[ResolvedCollectionCommand[FindAndModify]] {
+    extends OWrites[ResolvedCollectionCommand[FindAndModify]] {
 
     def writes(command: ResolvedCollectionCommand[FindAndModify]): JsObject = {
       val optionalFields = List[Option[(String, JsValueWrapper)]](

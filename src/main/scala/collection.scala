@@ -59,7 +59,7 @@ object `package` {
 }
 
 object JSONBatchCommands
-    extends BatchCommands[JSONSerializationPack.type] { commands =>
+  extends BatchCommands[JSONSerializationPack.type] { commands =>
 
   import play.api.libs.json.{
     JsError,
@@ -102,7 +102,7 @@ object JSONBatchCommands
   val DistinctCommand = JSONDistinctCommand
 
   implicit object DistinctWriter
-      extends pack.Writer[ResolvedCollectionCommand[DistinctCommand.Distinct]] {
+    extends pack.Writer[ResolvedCollectionCommand[DistinctCommand.Distinct]] {
 
     import CommonImplicits.ReadConcernWriter
 
@@ -120,7 +120,7 @@ object JSONBatchCommands
   }
 
   implicit object DistinctResultReader
-      extends pack.Reader[DistinctCommand.DistinctResult] {
+    extends pack.Reader[DistinctCommand.DistinctResult] {
 
     import scala.collection.immutable.ListSet
 
@@ -148,7 +148,7 @@ object JSONBatchCommands
   }
 
   implicit object CountWriter
-      extends pack.Writer[ResolvedCollectionCommand[CountCommand.Count]] {
+    extends pack.Writer[ResolvedCollectionCommand[CountCommand.Count]] {
 
     def writes(count: ResolvedCollectionCommand[CountCommand.Count]): pack.Document = {
       val fields = Seq[Option[(String, Json.JsValueWrapper)]](
@@ -164,7 +164,7 @@ object JSONBatchCommands
   }
 
   implicit object CountResultReader
-      extends pack.Reader[CountCommand.CountResult] {
+    extends pack.Reader[CountCommand.CountResult] {
     def reads(js: JsValue): JsResult[CountCommand.CountResult] =
       (js \ "n").validate[Int].map(CountCommand.CountResult(_))
   }
@@ -208,7 +208,7 @@ object JSONBatchCommands
   type ResolvedUpdate = ResolvedCollectionCommand[UpdateCommand.Update]
 
   implicit object UpdateElementWriter
-      extends pack.Writer[UpdateCommand.UpdateElement] {
+    extends pack.Writer[UpdateCommand.UpdateElement] {
 
     def writes(element: UpdateCommand.UpdateElement): pack.Document = Json.obj(
       "q" -> element.q,
@@ -243,7 +243,7 @@ object JSONBatchCommands
   }
 
   implicit object WriteConcernErrorReader
-      extends pack.Reader[WriteConcernError] {
+    extends pack.Reader[WriteConcernError] {
     def reads(js: JsValue): JsResult[WriteConcernError] = for {
       co <- (js \ "code").validate[Int]
       em <- (js \ "errmsg").validate[String]
@@ -279,7 +279,7 @@ object JSONBatchCommands
   type ResolvedDelete = ResolvedCollectionCommand[DeleteCommand.Delete]
 
   implicit object DeleteElementWriter
-      extends pack.Writer[DeleteCommand.DeleteElement] {
+    extends pack.Writer[DeleteCommand.DeleteElement] {
     def writes(e: DeleteCommand.DeleteElement): pack.Document = Json.obj(
       "q" -> e.q, "limit" -> e.limit
     )
@@ -295,13 +295,13 @@ object JSONBatchCommands
   }
 
   implicit object DefaultWriteResultReader
-      extends pack.Reader[DefaultWriteResult] {
+    extends pack.Reader[DefaultWriteResult] {
     def reads(js: JsValue): JsResult[DefaultWriteResult] = for {
       ok <- readOpt[Int](js \ "ok")
       n <- readOpt[Int](js \ "n")
       we <- readOpt[Seq[WriteError]](js \ "writeErrors")
       ce <- readOpt[WriteConcernError](js \ "writeConcernError")
-      co <- readOpt[Int](js \ "code") //FIXME There is no corresponding official docs.      
+      co <- readOpt[Int](js \ "code") //FIXME There is no corresponding official docs.
       em <- readOpt[String](js \ "errmsg") //FIXME There is no corresponding official docs.
     } yield DefaultWriteResult(
       ok = ok.exists(_ != 0),
@@ -371,12 +371,12 @@ object JSONBatchCommands
  * using `Reads` and `Writes`.
  */
 final class JSONCollection(
-  val db: DB,
-  val name: String,
-  val failoverStrategy: FailoverStrategy,
-  override val readPreference: ReadPreference
+    val db: DB,
+    val name: String,
+    val failoverStrategy: FailoverStrategy,
+    override val readPreference: ReadPreference
 ) extends GenericCollection[JSONSerializationPack.type]
-    with CollectionMetaCommands {
+  with CollectionMetaCommands {
 
   @deprecated("Use the constructor with a ReadPreference", "0.12-RC5")
   def this(db: DB, name: String, failoverStrategy: FailoverStrategy) =
@@ -437,6 +437,7 @@ final class JSONCollection(
 }
 
 @SerialVersionUID(1)
+@SuppressWarnings(Array("FinalModifierOnCaseClass"))
 case class JSONQueryBuilder(
     @transient collection: Collection,
     failover: FailoverStrategy,
@@ -519,7 +520,7 @@ sealed trait JsCursor[T] extends Cursor[T] {
 }
 
 class JsCursorImpl[T: Writes](val wrappee: Cursor[T])
-    extends JsCursor[T] with WrappedCursor[T] {
+  extends JsCursor[T] with WrappedCursor[T] {
   import Cursor.{ Cont, Fail }
 
   private val writes = implicitly[Writes[T]]
@@ -532,7 +533,7 @@ class JsCursorImpl[T: Writes](val wrappee: Cursor[T])
 }
 
 class JsFlattenedCursor[T](val future: Future[JsCursor[T]])
-    extends FlattenedCursor[T](future) with JsCursor[T] {
+  extends FlattenedCursor[T](future) with JsCursor[T] {
 
   def jsArray(maxDocs: Int = Int.MaxValue)(implicit ec: ExecutionContext): Future[JsArray] = future.flatMap(_.jsArray(maxDocs))
 

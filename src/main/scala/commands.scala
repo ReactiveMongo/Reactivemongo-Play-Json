@@ -34,7 +34,7 @@ import reactivemongo.api.commands.{ CommandError, UnitBox }
 
 object CommonImplicits {
   implicit object UnitBoxReader
-      extends DealingWithGenericCommandErrorsReader[UnitBox.type] {
+    extends DealingWithGenericCommandErrorsReader[UnitBox.type] {
     def readResult(doc: JsObject): UnitBox.type = UnitBox
   }
 
@@ -48,7 +48,8 @@ trait JSONCommandError extends CommandError {
   def originalDocument: JsObject
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+@SuppressWarnings(Array(
+  "FinalModifierOnCaseClass", "IncorrectlyNamedExceptions"))
 case class DefaultJSONCommandError(
     code: Option[Int],
     errmsg: Option[String],
@@ -73,7 +74,7 @@ object JSONCommandError {
 }
 
 private[commands] trait DealingWithGenericCommandErrorsReader[A]
-    extends Reads[A] {
+  extends Reads[A] {
 
   def readResult(doc: JsObject): A
 

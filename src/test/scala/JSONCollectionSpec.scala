@@ -26,7 +26,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   import reactivemongo.bson._
 
   case class User(
-    _id: Option[BSONObjectID] = None, username: String, height: Double
+      _id: Option[BSONObjectID] = None, username: String, height: Double
   )
 
   implicit val userReads = Json.reads[User]

@@ -21,7 +21,7 @@ import reactivemongo.api.commands.AggregationFramework
 import reactivemongo.play.json.JSONSerializationPack
 
 object JSONAggregationFramework
-    extends AggregationFramework[JSONSerializationPack.type] {
+  extends AggregationFramework[JSONSerializationPack.type] {
 
   import Json.JsValueWrapper
 
@@ -56,7 +56,7 @@ object JSONAggregationImplicits {
   import JSONAggregationFramework.{ Aggregate, AggregationResult }
 
   implicit object AggregateWriter
-      extends OWrites[ResolvedCollectionCommand[Aggregate]] {
+    extends OWrites[ResolvedCollectionCommand[Aggregate]] {
     def writes(agg: ResolvedCollectionCommand[Aggregate]): JsObject = {
       val fields = Seq[(String, JsValue)](
         "aggregate" -> toJson(agg.collection),
@@ -85,7 +85,7 @@ object JSONAggregationImplicits {
   }
 
   implicit object AggregationResultReader
-      extends DealingWithGenericCommandErrorsReader[AggregationResult] {
+    extends DealingWithGenericCommandErrorsReader[AggregationResult] {
 
     def readResult(doc: JsObject): AggregationResult =
       if (doc.value contains "stages") AggregationResult(List(doc), None) else {

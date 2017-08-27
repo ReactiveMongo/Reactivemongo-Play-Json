@@ -148,7 +148,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
 case class Expeditor(name: String)
 case class Item(name: String, description: String, occurrences: Int)
 case class Package(
-  expeditor: Expeditor,
-  items: List[Item],
-  price: Float
+    expeditor: Expeditor,
+    items: List[Item],
+    price: Float
 )
