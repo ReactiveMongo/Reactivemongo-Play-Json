@@ -185,6 +185,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
           x.head._1 mustEqual (__ \ f"$$regex")
         }, x => failure(s"got a JsSuccess = $result instead of a JsError")
       )
+
       ok
     }
 

@@ -219,7 +219,7 @@ object JSONBatchCommands
   implicit object UpdateWriter extends pack.Writer[ResolvedUpdate] {
     def writes(cmd: ResolvedUpdate): pack.Document = Json.obj(
       "update" -> cmd.collection,
-      "updates" -> Json.toJson(cmd.command.documents),
+      "updates" -> Json.toJson(cmd.command.updates),
       "ordered" -> cmd.command.ordered,
       "writeConcern" -> cmd.command.writeConcern
     )
@@ -507,9 +507,10 @@ object Helpers {
    * @param bulkSize the maximum size for each insert bulk
    * @param wc the write concern
    */
+  @deprecated("Use `bulkInsert` without `bulkSize` and `bulkByteSize` (resolved from the metadata)", "0.12.7")
   def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean, bulkSize: Int, bulkByteSize: Int)(implicit ec: ExecutionContext, wc: WriteConcern): Future[MultiBulkWriteResult] =
     documentProducer(collection, documents).flatMap { producer =>
-      collection.bulkInsert(ordered, wc, bulkSize, bulkByteSize)(producer: _*)
+      collection.insert[JsObject](ordered, wc).many(producer.map(_.produce))
     }
 
   /**
@@ -521,7 +522,7 @@ object Helpers {
    */
   def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean = true)(implicit ec: ExecutionContext, wc: WriteConcern = collection.db.connection.options.writeConcern): Future[MultiBulkWriteResult] =
     documentProducer(collection, documents).flatMap { producer =>
-      collection.bulkInsert(ordered, wc)(producer: _*)
+      collection.insert[JsObject](ordered, wc).many(producer.map(_.produce))
     }
 
   private def documentProducer(collection: JSONCollection, documents: => InputStream)(implicit ec: ExecutionContext): Future[List[collection.ImplicitlyDocumentProducer]] = {
