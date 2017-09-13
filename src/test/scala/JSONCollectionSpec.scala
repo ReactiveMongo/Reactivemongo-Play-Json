@@ -1,10 +1,13 @@
 import scala.concurrent._, duration._
 
+import scala.util.{ Failure, Try }
+
 import reactivemongo.api.Cursor
-import reactivemongo.api.commands.{ CommandError, UnitBox, WriteResult }
+import reactivemongo.api.commands.{ CommandError, UnitBox }
 
 import reactivemongo.core.errors.DetailedDatabaseException
 
+import org.specs2.specification.core.Fragments
 import org.specs2.concurrent.{ ExecutionEnv => EE }
 
 class JSONCollectionSpec extends org.specs2.mutable.Specification {
@@ -255,13 +258,13 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
       case (origDoc, hasCode, hasErrmsg) =>
         val res = Try(pack.deserialize[UnitBox.type](origDoc, reader))
 
-        val mustHasCode = if (!hasCode) ok else {
+        lazy val mustHasCode = if (!hasCode) ok else {
           res must beLike {
             case Failure(CommandError.Code(1)) => ok
           }
         }
 
-        val mustHasErrmsg = if (!hasErrmsg) ok else {
+        lazy val mustHasErrmsg = if (!hasErrmsg) ok else {
           res must beLike {
             case Failure(CommandError.Message("Foo")) => ok
           }

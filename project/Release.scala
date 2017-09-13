@@ -79,7 +79,11 @@ object Release {
   }
 
   val driverVersion = Def.setting[String] {
-    Version(version.value).map(_.withoutQualifier.string).get
+    Version(version.value).map(_.withoutQualifier.string).map { v =>
+      if (version.value.indexOf("SNAPSHOT") != -1) {
+        s"${v}-SNAPSHOT"
+      } else v
+    }.get
   }
 
   val settings = Seq(

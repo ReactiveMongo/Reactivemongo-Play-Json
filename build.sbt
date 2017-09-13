@@ -5,9 +5,9 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.11.8"
+scalaVersion in ThisBuild := "2.11.11"
 
-crossScalaVersions in ThisBuild := Seq("2.11.8")
+crossScalaVersions in ThisBuild := Seq(scalaVersion.value)
 
 crossVersion in ThisBuild := CrossVersion.binary
 

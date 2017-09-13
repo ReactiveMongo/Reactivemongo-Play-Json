@@ -702,6 +702,7 @@ object Writers {
 
 object JSONSerializationPack extends reactivemongo.api.SerializationPack {
   import reactivemongo.bson.buffer.{ ReadableBuffer, WritableBuffer }
+  import reactivemongo.play.json.commands.JSONCommandError
 
   type Value = JsValue
   type ElementProducer = (String, Json.JsValueWrapper)
@@ -713,8 +714,8 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   object IdentityReader extends Reader[Document] {
     def reads(js: JsValue): JsResult[Document] = js match {
-      case o: JsObject => JsSuccess(o)
-      case v           => JsError(s"object is expected: $v")
+      case o @ JsObject(_) => JsSuccess(o)
+      case v               => JsError(s"object is expected: $v")
     }
   }
 
@@ -726,12 +727,14 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def deserialize[A](document: Document, reader: Reader[A]): A =
     reader.reads(document) match {
-      case JsError(errors) => throw JsResultException(errors)
-      case JsSuccess(v, _) => v
+      case JSONCommandError(err) => throw err
+      case JsError(errors)       => throw JsResultException(errors)
+      case JsSuccess(v, _)       => v
     }
 
   def writeToBuffer(buffer: WritableBuffer, document: Document): WritableBuffer = BSONFormats.toBSON(document) match {
-    case JsError(errors) => throw JsResultException(errors)
+    case JSONCommandError(err) => throw err
+    case JsError(errors)       => throw JsResultException(errors)
 
     case JsSuccess(d @ BSONDocument(_), _) => {
       BSONDocument.write(d, buffer)
@@ -756,9 +759,10 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
   def readValue[A](value: Value, reader: WidenValueReader[A]): Try[A] =
     reader.reads(value) match {
-      case JsError(errors) => Failure(JsResultException(errors))
+      case JSONCommandError(err) => Failure(err)
+      case JsError(errors)       => Failure(JsResultException(errors))
 
-      case JsSuccess(v, _) => Success(v)
+      case JsSuccess(v, _)       => Success(v)
     }
 }
 
