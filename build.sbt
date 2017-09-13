@@ -70,6 +70,12 @@ scalacOptions in (Compile, doc) ++= Seq(
   Opts.doc.title("ReactiveMongo Play JSON API") ++
   Opts.doc.version(Release.major.value)
 
+resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
+resolvers += "Sonatype Staging" at "https://oss.sonatype.org/content/repositories/staging/"
+
+resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
@@ -168,6 +174,14 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
   },
   mimaBinaryIssueFilters ++= {
     Seq(
+      ProblemFilters.exclude[MissingClassProblem](
+        "reactivemongo.play.json.BSONFormats$BSONTimestampFormat$TimeValue$"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "reactivemongo.play.json.BSONFormats$BSONDateTimeFormat$DateValue$"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "reactivemongo.play.json.BSONFormats$BSONObjectIDFormat$OidValue$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONJavaScriptFormat$JavascriptValue$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONSymbolFormat$SymbolValue$"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
         "reactivemongo.play.json.BSONFormats.readAsBSONValue"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](

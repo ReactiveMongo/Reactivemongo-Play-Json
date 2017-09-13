@@ -15,7 +15,7 @@
  */
 package reactivemongo.play.json
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Success }
 
 import play.api.libs.json.{
   Format,
@@ -39,7 +39,6 @@ import play.api.libs.json.{
   Reads,
   RecursiveSearch,
   Writes,
-  JsResultException,
   __
 }
 import reactivemongo.bson.{
@@ -232,7 +231,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONObjectIDFormat extends PartialFormat[BSONObjectID] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONObjectID]] = {
-      case OidValue(oid) => BSONObjectID.parse(oid) match {
+      case ObjectID(oid) => BSONObjectID.parse(oid) match {
         case Success(id) => JsSuccess(id)
         case Failure(er) => JsError(er.getMessage)
       }
@@ -247,7 +246,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       json
     }
 
-    private object OidValue {
+    private[json] object ObjectID {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$oid").asOpt[String]
@@ -256,7 +255,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONJavaScriptFormat extends PartialFormat[BSONJavaScript] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONJavaScript]] = {
-      case JavascriptValue(oid) => JsSuccess(BSONJavaScript(oid))
+      case JavaScript(js) => JsSuccess(BSONJavaScript(js))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -268,7 +267,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       json
     }
 
-    private object JavascriptValue {
+    private[json] object JavaScript {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$javascript").asOpt[String]
@@ -287,7 +286,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONDateTimeFormat extends PartialFormat[BSONDateTime] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONDateTime]] = {
-      case DateValue(value) => JsSuccess(BSONDateTime(value))
+      case Date(value) => JsSuccess(BSONDateTime(value))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -299,7 +298,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       json
     }
 
-    private object DateValue {
+    private[json] object Date {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[Long] =
         (obj \ f"$$date").asOpt[JsValue].flatMap {
@@ -312,7 +311,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONTimestampFormat extends PartialFormat[BSONTimestamp] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONTimestamp]] = {
-      case TimeValue((time, i)) => JsSuccess(BSONTimestamp(time, i))
+      case Time((time, i)) => JsSuccess(BSONTimestamp(time, i))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -329,7 +328,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       json
     }
 
-    private object TimeValue {
+    private[json] object Time {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[(Long, Int)] = (for {
         time <- (obj \ f"$$time").asOpt[Long]
@@ -346,7 +345,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONUndefinedFormat
     extends PartialFormat[BSONUndefined.type] {
-    private object Undefined {
+    private[json] object Undefined {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[BSONUndefined.type] =
         obj.value.get(f"$$undefined") match {
@@ -375,28 +374,17 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
         "ExistsSimplifableToContains", "LooksLikeInterpolatedString"
       ))
       @inline def bson: PartialFunction[JsValue, JsResult[BSONRegex]] = {
-        case js @ JsObject(fields) if (
-          js.values.size == 1 && fields.headOption.exists(_._1 == f"$$regex")
-        ) => {
-          fields.headOption.flatMap(_._2.asOpt[String]).
-            map(rx => JsSuccess(BSONRegex(rx, ""))).
-            getOrElse(JsError(__ \ f"$$regex", "string expected"))
-        }
+        case obj @ JsObject(fields) if (
+          fields.contains(f"$$regex") &&
+          !(obj \ f"$$regex").asOpt[String].isDefined
+        ) => JsError(__ \ f"$$regex", "string expected")
 
-        case js @ JsObject(_) if (
-          js.value.size == 2 && js.value.exists(_._1 == f"$$regex") &&
-          js.value.exists(_._1 == f"$$options")
-        ) => {
-          val rx = (js \ f"$$regex").asOpt[String]
-          val opts = (js \ f"$$options").asOpt[String]
+        case obj @ JsObject(fields) if (
+          fields.contains(f"$$options") &&
+          !(obj \ f"$$options").asOpt[String].isDefined
+        ) => JsError(__ \ f"$$options", "string expected")
 
-          (rx, opts) match {
-            case (Some(rx), Some(opts)) => JsSuccess(BSONRegex(rx, opts))
-            case (None, Some(_))        => JsError(__ \ f"$$regex", "string expected")
-            case (Some(_), None)        => JsError(__ \ f"$$options", "string expected")
-            case _                      => JsError(__ \ f"$$regex", "string expected") ++ JsError(__ \ f"$$options", "string expected")
-          }
-        }
+        case Regex(rx, opts) => JsSuccess(BSONRegex(rx, opts.getOrElse("")))
       }
 
       bson
@@ -413,11 +401,24 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
       json
     }
+
+    private[json] object Regex {
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      def unapply(js: JsObject): Option[(String, Option[String])] = {
+        if (js.value.size >= 1 && js.value.exists(_._1 == f"$$regex")) {
+          (js \ f"$$regex").asOpt[String].map { rx =>
+            rx -> (js \ f"$$options").asOpt[String]
+          }
+        } else {
+          Option.empty[(String, Option[String])]
+        }
+      }
+    }
   }
 
   implicit object BSONMinKeyFormat
     extends PartialFormat[BSONMinKey.type] {
-    private object MinKey {
+    private[json] object MinKey {
       private val JsOne = JsNumber(1)
 
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
@@ -445,7 +446,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONMaxKeyFormat
     extends PartialFormat[BSONMaxKey.type] {
-    private object MaxKey {
+    private[json] object MaxKey {
       private val JsOne = JsNumber(1)
 
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
@@ -475,6 +476,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     val partialReads: PartialFunction[JsValue, JsResult[BSONNull.type]] = {
       case JsNull => JsSuccess(BSONNull)
     }
+
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
       case BSONNull => JsNull
     }
@@ -563,7 +565,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONSymbolFormat extends PartialFormat[BSONSymbol] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONSymbol]] = {
-      case SymbolValue(value) => JsSuccess(BSONSymbol(value))
+      case Symbol(value) => JsSuccess(BSONSymbol(value))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -575,7 +577,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       json
     }
 
-    private object SymbolValue {
+    private[json] object Symbol {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def unapply(obj: JsObject): Option[String] =
         if (obj.fields.size != 1) None else (obj \ f"$$symbol").asOpt[String]
@@ -698,72 +700,6 @@ object Writers {
         }
       }
   }
-}
-
-object JSONSerializationPack extends reactivemongo.api.SerializationPack {
-  import reactivemongo.bson.buffer.{ ReadableBuffer, WritableBuffer }
-  import reactivemongo.play.json.commands.JSONCommandError
-
-  type Value = JsValue
-  type ElementProducer = (String, Json.JsValueWrapper)
-  type Document = JsObject
-  type Writer[A] = OWrites[A]
-  type Reader[A] = Reads[A]
-  type NarrowValueReader[A] = Reads[A]
-  private[reactivemongo] type WidenValueReader[A] = Reads[A]
-
-  object IdentityReader extends Reader[Document] {
-    def reads(js: JsValue): JsResult[Document] = js match {
-      case o @ JsObject(_) => JsSuccess(o)
-      case v               => JsError(s"object is expected: $v")
-    }
-  }
-
-  object IdentityWriter extends Writer[Document] {
-    def writes(document: Document): Document = document
-  }
-
-  def serialize[A](a: A, writer: Writer[A]): Document = writer.writes(a)
-
-  def deserialize[A](document: Document, reader: Reader[A]): A =
-    reader.reads(document) match {
-      case JSONCommandError(err) => throw err
-      case JsError(errors)       => throw JsResultException(errors)
-      case JsSuccess(v, _)       => v
-    }
-
-  def writeToBuffer(buffer: WritableBuffer, document: Document): WritableBuffer = BSONFormats.toBSON(document) match {
-    case JSONCommandError(err) => throw err
-    case JsError(errors)       => throw JsResultException(errors)
-
-    case JsSuccess(d @ BSONDocument(_), _) => {
-      BSONDocument.write(d, buffer)
-      buffer
-    }
-
-    case JsSuccess(v, _) => sys.error(
-      s"fails to write the document: $document; unexpected conversion $v"
-    )
-  }
-
-  def readFromBuffer(buffer: ReadableBuffer): Document =
-    BSONFormats.toJSON(BSONDocument.read(buffer)).as[Document]
-
-  def writer[A](f: A => Document): Writer[A] = new OWrites[A] {
-    def writes(input: A): Document = f(input)
-  }
-
-  def isEmpty(document: Document): Boolean = document.values.isEmpty
-
-  def widenReader[T](r: NarrowValueReader[T]): WidenValueReader[T] = r
-
-  def readValue[A](value: Value, reader: WidenValueReader[A]): Try[A] =
-    reader.reads(value) match {
-      case JSONCommandError(err) => Failure(err)
-      case JsError(errors)       => Failure(JsResultException(errors))
-
-      case JsSuccess(v, _)       => Success(v)
-    }
 }
 
 import play.api.libs.json.{ JsObject, JsValue }
