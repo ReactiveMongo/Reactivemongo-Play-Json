@@ -760,7 +760,6 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
 
       case JsSuccess(v, _) => Success(v)
     }
-
 }
 
 import play.api.libs.json.{ JsObject, JsValue }
