@@ -2,11 +2,8 @@ import scala.util.{ Failure, Try }
 
 import scala.concurrent._, duration._
 
-import reactivemongo.api.commands.{
-  CommandError,
-  UnitBox,
-  WriteResult
-}
+import reactivemongo.api.Cursor
+import reactivemongo.api.commands.{ CommandError, UnitBox, WriteResult }
 
 import reactivemongo.core.errors.DetailedDatabaseException
 
@@ -154,6 +151,17 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   }
 
   "JSON collection" should {
+    @inline def cursorAll(implicit ec: ExecutionContext): Cursor[JsObject] =
+      collection.withReadPreference(ReadPreference.secondaryPreferred).
+        find(Json.obj()).cursor[JsObject]()
+
+    "use read preference from the collection" in { implicit ee: EE =>
+      import scala.language.reflectiveCalls
+      val withPref = cursorAll.asInstanceOf[{ def preference: ReadPreference }]
+
+      withPref.preference must_== ReadPreference.secondaryPreferred
+    }
+
     "find with empty criteria document" in { implicit ee: EE =>
       collection.find(Json.obj()).sort(Json.obj("updated" -> -1)).
         cursor[JsObject]().collect[List]().
