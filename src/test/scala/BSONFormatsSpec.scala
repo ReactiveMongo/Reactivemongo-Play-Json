@@ -9,7 +9,10 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     "handle object ID ($oid) as a separate value" in {
       val oid = BSONObjectID.generate
       val oidAgain = Json.fromJson[BSONObjectID](Json.toJson(oid))
-      oid mustEqual oidAgain.get
+
+      oidAgain must beLike[JsResult[BSONObjectID]] {
+        case JsSuccess(v, _) => v must_== oid
+      }
     }
 
     "should convert special ObjectID notation only if there is only one field named $oid of type String" in {
@@ -27,6 +30,55 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val oid = BSONObjectID.generate
 
       toJSON(oid) mustEqual Json.toJson(oid)
+    }
+
+    // ---
+
+    "handle BSON binary" >> {
+      import reactivemongo.bson.utils.Converters
+
+      val bytes = scala.util.Random.shuffle(1 to 129).map(_.toByte).toArray
+      val userDefinedBin = BSONBinary(bytes, Subtype.UserDefinedSubtype)
+      val genericBin = BSONBinary(bytes, Subtype.GenericBinarySubtype)
+      val hexaValue = Converters.hex2Str(bytes)
+
+      "read from simple string representation" in {
+        Json.toJson(hexaValue).
+          validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
+            case JsSuccess(bin, _) => bin must_== userDefinedBin
+          }
+      }
+
+      "handle with extended JSON syntax" >> {
+        val baseObj = Json.obj(f"$$binary" -> hexaValue)
+
+        "without explicit subtype" in {
+          baseObj.validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
+            case JsSuccess(bin, _) => bin must_== userDefinedBin and {
+              // Even if default the subtype on read, always write it
+
+              val explicitJsSubtpe = Json.toJson(Converters.hex2Str(
+                Array(Subtype.UserDefinedSubtype.value)))
+
+              Json.toJson(bin) must_== (baseObj + (
+                f"$$type" -> explicitJsSubtpe))
+            }
+          }
+        }
+
+        s"with explicit subtype ${Subtype.GenericBinarySubtype}" in {
+          val hexaGeneric = Converters.hex2Str(
+            Array(Subtype.GenericBinarySubtype.value))
+
+          val withTpe = baseObj + (f"$$type" -> Json.toJson(hexaGeneric))
+
+          withTpe.validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
+            case JsSuccess(bin, _) => bin must_== genericBin and {
+              Json.toJson(bin) must_== withTpe
+            }
+          }
+        }
+      }
     }
 
     // ---

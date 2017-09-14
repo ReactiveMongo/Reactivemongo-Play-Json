@@ -19,12 +19,13 @@ import play.api.libs.json.{
   Reads
 }
 
+import reactivemongo.api.SerializationPack
 import reactivemongo.bson.BSONDocument
 import reactivemongo.bson.buffer.{ ReadableBuffer, WritableBuffer }
 
 import reactivemongo.play.json.commands.JSONCommandError
 
-object JSONSerializationPack extends reactivemongo.api.SerializationPack {
+object JSONSerializationPack extends SerializationPack { self =>
   type Value = JsValue
   type ElementProducer = (String, Json.JsValueWrapper)
   type Document = JsObject
@@ -86,20 +87,7 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
       case JsSuccess(v, _)       => Success(v)
     }
 
-  /*
-        case obj @ JsObject(fields) if fields.exists {
-          case (str, _: JsString) if str == f"$$binary" => true
-          case _                                        => false
-        } => try {
-          JsSuccess(BSONBinary(Converters.str2Hex((obj \ f"$$binary").as[String]), Subtype.UserDefinedSubtype))
-
-    5 /* header = 4 (value.readable: Int) + 1 (subtype.value.toByte) */ +
-      value.readable
-
-
-   */
-
-  private[reactivemongo] def bsonSize(value: JsValue): Int = {
+  override private[reactivemongo] def bsonSize(value: JsValue): Int = {
     @inline def str(s: String) = 5 + s.getBytes.size
 
     value match {
@@ -129,10 +117,12 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
         case BSONDateTimeFormat.Date(_) | BSONTimestampFormat.Time(_, _) =>
           8 // Long
 
+        case BSONBinaryFormat.Binary(hexa, _) =>
+          5 /* header = 4 (value.readable:Int) + 1 (subtype.value.toByte) */ + (
+            hexa.getBytes.size / 2 /* max estimated size */ )
+
         case _ => bsonSize(fields)
       }
-
-      // TODO: Binary
 
       case _ => -1 // unsupported/fallback
     }
@@ -143,4 +133,34 @@ object JSONSerializationPack extends reactivemongo.api.SerializationPack {
       case (sz, (n, v)) =>
         sz + 2 + n.getBytes.size + bsonSize(v)
     }
+
+  override private[reactivemongo] def newBuilder: SerializationPack.Builder[JSONSerializationPack.type] = Builder
+
+  // ---
+
+  /** A builder for serialization simple values (useful for the commands) */
+  private object Builder
+    extends SerializationPack.Builder[JSONSerializationPack.type] {
+    protected val pack = self
+
+    def document(elements: Seq[ElementProducer]): Document =
+      Json.obj(elements: _*)
+
+    def array(value: Value, values: Seq[Value]): Value =
+      JsArray(value +: values)
+
+    // (String, Json.JsValueWrapper)
+    def elementProducer(name: String, value: Value): ElementProducer =
+      name -> implicitly[Json.JsValueWrapper](value)
+
+    def boolean(b: Boolean): Value = JsBoolean(b)
+
+    def int(i: Int): Value = JsNumber(BigDecimal(i))
+
+    def long(l: Long): Value = JsNumber(BigDecimal(l))
+
+    def double(d: Double): Value = JsNumber(BigDecimal(d.toString))
+
+    def string(s: String): Value = JsString(s)
+  }
 }

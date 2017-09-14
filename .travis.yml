@@ -15,7 +15,7 @@ cache:
   - $HOME/mongodb-linux-x86_64-amazon-3.4.5
 scala:
 - 2.11.11
-- 2.12.2
+- 2.12.3
 jdk:
 - oraclejdk8
 env:
@@ -23,7 +23,7 @@ env:
   - PLAY_VERSION=2.6.1
 matrix: 
   exclude: 
-    - scala: 2.12.2
+    - scala: 2.12.3
       env: PLAY_VERSION=2.5.0
     - scala: 2.11.11
       env: PLAY_VERSION=2.6.1

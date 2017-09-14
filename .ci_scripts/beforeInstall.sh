@@ -3,15 +3,24 @@
 SCRIPT_DIR=`dirname $0 | sed -e "s|^\./|$PWD/|"`
 
 # Install MongoDB
-if [ ! -x "$HOME/mongodb-linux-x86_64-amazon-3.4.5/bin/mongod" ]; then
-    curl -s -o /tmp/mongodb.tgz https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.5.tgz
-    cd "$HOME" && rm -rf mongodb-linux-x86_64-amazon-3.4.5
-    tar -xzf /tmp/mongodb.tgz && rm -f /tmp/mongodb.tgz
-    chmod u+x mongodb-linux-x86_64-amazon-3.4.5/bin/mongod
+MONGO_HOME="$HOME/mongodb-linux-x86_64-amazon-3.4.5"
+
+if [ ! -x "$MONGO_HOME/bin/mongod" ]; then
+    if [ -d "$MONGO_HOME" ]; then
+      rm -rf "$MONGO_HOME"
+    fi
+
+    cd "$HOME"
+    curl -s -o /tmp/mongodb.tgz https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.5.tgz | tar -xzf -
+    chmod u+x "$MONGO_HOME/bin/mongod"
 fi
 
+export PATH="$MONGO_HOME/bin:$PATH"
+
 # OpenSSL
-if [ ! -L "$HOME/ssl/lib/libssl.so.1.0.0" ]; then
+if [ ! -L "$HOME/ssl/lib/libssl.so.1.0.0" ] && [ ! -f "$HOME/ssl/lib/libssl.so.1.0.0" ]; then
+  echo "[INFO] Building OpenSSL"
+
   cd /tmp
   curl -s -o - https://www.openssl.org/source/openssl-1.0.1s.tar.gz | tar -xzf -
   cd openssl-1.0.1s
@@ -19,18 +28,14 @@ if [ ! -L "$HOME/ssl/lib/libssl.so.1.0.0" ]; then
   ./config -shared enable-ssl2 --prefix="$HOME/ssl" > /dev/null
   make depend > /dev/null
   make install > /dev/null
-else
-  #find "$HOME/ssl" -ls
-  rm -f "$HOME/ssl/lib/libssl.so.1.0.0" "libcrypto.so.1.0.0"
-fi
 
-ln -s "$HOME/ssl/lib/libssl.so.1.0.0" "$HOME/ssl/lib/libssl.so.10"
-ln -s "$HOME/ssl/lib/libcrypto.so.1.0.0" "$HOME/ssl/lib/libcrypto.so.10"
+  ln -s "$HOME/ssl/lib/libssl.so.1.0.0" "$HOME/ssl/lib/libssl.so.10"
+  ln -s "$HOME/ssl/lib/libcrypto.so.1.0.0" "$HOME/ssl/lib/libcrypto.so.10"
+fi
 
 export LD_LIBRARY_PATH="$HOME/ssl/lib:$LD_LIBRARY_PATH"
 
 # MongoDB configuration
-export PATH="$HOME/mongodb-linux-x86_64-amazon-3.4.5/bin:$PATH"
 MONGO_CONF="$SCRIPT_DIR/mongod3.conf"
 
 mkdir /tmp/mongodb

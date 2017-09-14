@@ -520,21 +520,19 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     val partialReads: PartialFunction[JsValue, JsResult[BSONBinary]] = {
       @SuppressWarnings(Array("CatchException", "LooksLikeInterpolatedString"))
       @inline def bson: PartialFunction[JsValue, JsResult[BSONBinary]] = {
-        case JsString(str) => try {
-          JsSuccess(BSONBinary(
-            Converters.str2Hex(str), Subtype.UserDefinedSubtype
-          ))
+        case Binary(hexaStr, subtpe) => try {
+          val sub = subtpe.getOrElse(Subtype.UserDefinedSubtype)
+          JsSuccess(BSONBinary(Converters.str2Hex(hexaStr), sub))
         } catch {
           case e: Exception => JsError(
             s"error deserializing hex ${e.getMessage}"
           )
         }
 
-        case obj @ JsObject(fields) if fields.exists {
-          case (str, _: JsString) if str == f"$$binary" => true
-          case _                                        => false
-        } => try {
-          JsSuccess(BSONBinary(Converters.str2Hex((obj \ f"$$binary").as[String]), Subtype.UserDefinedSubtype))
+        case JsString(str) => try {
+          JsSuccess(BSONBinary(
+            Converters.str2Hex(str), Subtype.UserDefinedSubtype
+          ))
         } catch {
           case e: Exception => JsError(
             s"error deserializing hex ${e.getMessage}"
@@ -560,6 +558,19 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       }
 
       json
+    }
+
+    private[json] object Binary {
+      def unapply(obj: JsObject): Option[(String, Option[Subtype])] =
+        (obj \ f"$$binary").asOpt[String].map { hexaValue =>
+          val subtpe = for {
+            hexaTpe <- (obj \ f"$$type").asOpt[String]
+            tpeByte <- Converters.str2Hex(hexaTpe).headOption
+            tpe <- scala.util.Try(Subtype(tpeByte)).toOption
+          } yield tpe
+
+          hexaValue -> subtpe
+        }
     }
   }
 
