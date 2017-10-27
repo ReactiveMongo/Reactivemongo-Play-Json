@@ -9,7 +9,7 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.12.3"
+scalaVersion in ThisBuild := "2.12.4"
 
 version ~= { ver =>
   sys.env.get("RELEASE_SUFFIX") match {
@@ -69,12 +69,6 @@ scalacOptions in (Compile, doc) ++= Seq(
   /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
   Opts.doc.title("ReactiveMongo Play JSON API") ++
   Opts.doc.version(Release.major.value)
-
-resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-
-resolvers += "Sonatype Staging" at "https://oss.sonatype.org/content/repositories/staging/"
-
-resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -230,19 +224,12 @@ lazy val publishSettings = {
 }
 
 // FindBugs
-import de.johoop.findbugs4sbt.{ FindBugs, ReportType }, FindBugs.{
-  findbugsExcludeFilters, findbugsReportPath, findbugsReportType,
-  findbugsSettings
-}
-
-findbugsSettings
-
 findbugsExcludeFilters := Some(
   scala.xml.XML.loadFile(baseDirectory.value / "project" / (
     "findbugs-exclude-filters.xml"))
 )
 
-findbugsReportType := Some(ReportType.PlainHtml)
+findbugsReportType := Some(FindbugsReport.PlainHtml)
 
 findbugsReportPath := Some(target.value / "findbugs.html")
 
@@ -250,8 +237,6 @@ findbugsReportPath := Some(target.value / "findbugs.html")
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-
-scalariformSettings(autoformat = true)
 
 ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(AlignParameters, false).

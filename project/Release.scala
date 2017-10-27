@@ -10,8 +10,8 @@ object Release {
 
   private def createLocalBranch(f: (String, String) => String) = Def.setting {
     val vcs = releaseVcs.value.get
-    val next = releaseVersion.value
     val ver = version.value
+    val next = Version(_: String).map(_.withoutQualifier.string).getOrElse(???)
     val releaseBranch = f(ver, next(ver))
 
     ReleaseStep(action = { st =>
