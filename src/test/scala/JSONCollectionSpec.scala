@@ -7,10 +7,12 @@ import reactivemongo.api.commands.{ CommandError, UnitBox, WriteResult }
 
 import reactivemongo.core.errors.DetailedDatabaseException
 
-import org.specs2.concurrent.{ ExecutionEnv => EE }
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.core.Fragments
 
-class JSONCollectionSpec extends org.specs2.mutable.Specification {
+class JSONCollectionSpec(implicit ee: ExecutionEnv)
+  extends org.specs2.mutable.Specification {
+
   "JSON collection" title
 
   sequential
@@ -36,7 +38,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   )
 
   "JSONCollection.save" should {
-    "add object if there does not exist in database" in { implicit ee: EE =>
+    "add object if there does not exist in database" in {
       // Check current document does not exist
       val query = BSONDocument("username" -> BSONString("John Doe"))
       bsonCollection.find(query).one[JsObject] must beNone.await(1, timeout)
@@ -56,7 +58,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         }.await(1, timeout)
     }
 
-    "update object there already exists in database" in { implicit ee: EE =>
+    "update object there already exists in database" in {
       // Find saved object
       val fetched1 = Await.result(collection.find(Json.obj("username" -> "John Doe")).one[User], timeout)
       fetched1 must beSome[User].which { u =>
@@ -81,29 +83,28 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
     }
 
     "add object if does not exist but its field `_id` is set" in {
-      implicit ee: EE =>
-        // Check current document does not exist
-        val query = BSONDocument("username" -> BSONString("Robert Roe"))
+      // Check current document does not exist
+      val query = BSONDocument("username" -> BSONString("Robert Roe"))
 
-        val id = BSONObjectID.generate
+      val id = BSONObjectID.generate
 
-        // Add document..
-        collection.save(User(
-          _id = Some(id), username = "Robert Roe", height = 13
-        )).map(_.ok) aka "saved" must beTrue.await(1, timeout) and {
-          // Check data in mongodb..
-          bsonCollection.find(query).one[BSONDocument].
-            aka("result") must beSome[BSONDocument].which { d =>
-              d.get("_id") must beSome(id) and (
-                d.get("username") must beSome(BSONString("Robert Roe"))
-              )
-            }.await(1, timeout)
-        }
+      // Add document..
+      collection.save(User(
+        _id = Some(id), username = "Robert Roe", height = 13
+      )).map(_.ok) aka "saved" must beTrue.await(1, timeout) and {
+        // Check data in mongodb..
+        bsonCollection.find(query).one[BSONDocument].
+          aka("result") must beSome[BSONDocument].which { d =>
+            d.get("_id") must beSome(id) and (
+              d.get("username") must beSome(BSONString("Robert Roe"))
+            )
+          }.await(1, timeout)
+      }
     }
   }
 
   "JSONCollection.findAndModify" should {
-    "be successful" in { implicit ee: EE =>
+    "be successful" in {
       val id = BSONObjectID.generate
       val updateOp = collection.updateModifier(
         User(
@@ -119,7 +120,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   }
 
   "JSONQueryBuilder.merge" should {
-    "write an JsObject with mongo query only if there are not options defined" in { implicit ee: EE =>
+    "write an JsObject with mongo query only if there are not options defined" in {
       val builder = JSONQueryBuilder(
         collection = collection,
         failover = new FailoverStrategy(),
@@ -138,11 +139,11 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         sortOption = Option(Json.obj("age" -> 1))
       )
 
-      "with query builder #1" in { implicit ee: EE =>
+      "with query builder #1" in {
         builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1}}""")
       }
 
-      "with query builder #2" in { implicit ee: EE =>
+      "with query builder #2" in {
         val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
 
         builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age"}""")
@@ -151,25 +152,25 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   }
 
   "JSON collection" should {
-    @inline def cursorAll(implicit ec: ExecutionContext): Cursor[JsObject] =
+    @inline def cursorAll: Cursor[JsObject] =
       collection.withReadPreference(ReadPreference.secondaryPreferred).
         find(Json.obj()).cursor[JsObject]()
 
-    "use read preference from the collection" in { implicit ee: EE =>
+    "use read preference from the collection" in {
       import scala.language.reflectiveCalls
       val withPref = cursorAll.asInstanceOf[{ def preference: ReadPreference }]
 
       withPref.preference must_== ReadPreference.secondaryPreferred
     }
 
-    "find with empty criteria document" in { implicit ee: EE =>
+    "find with empty criteria document" in {
       collection.find(Json.obj()).sort(Json.obj("updated" -> -1)).
         cursor[JsObject]().collect[List]().
         aka("find with empty document") must not(throwA[Throwable]).
         await(1, timeout)
     }
 
-    "find with selector and projection" in { implicit ee: EE =>
+    "find with selector and projection" in {
       collection.find(
         selector = Json.obj("username" -> "Jane Doe"),
         projection = Json.obj("_id" -> 0)
@@ -180,7 +181,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         }.await(1, timeout)
     }
 
-    "count all matching document" in { implicit ee: EE =>
+    "count all matching document" in {
       collection.count() aka "all" must beEqualTo(3).await(1, timeout) and (
         collection.count(Some(Json.obj("username" -> "Jane Doe"))).
         aka("with query") must beEqualTo(1).await(1, timeout)
@@ -192,7 +193,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
   }
 
   "JSON cursor" should {
-    "return result as a JSON array" in { implicit ee: EE =>
+    "return result as a JSON array" in {
       import reactivemongo.play.json.collection.JsCursor._
 
       collection.find(Json.obj()).cursor[JsObject]().jsArray().
@@ -202,7 +203,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
         )).await(1, timeout)
     }
 
-    "fail on maxTimeout" in { implicit ee: EE =>
+    "fail on maxTimeout" in {
       val ndocs = 100000
 
       Await.ready(Future.sequence {
@@ -222,7 +223,7 @@ class JSONCollectionSpec extends org.specs2.mutable.Specification {
 
     val quiz = db[JSONCollection](s"quiz_${System identityHashCode this}")
 
-    "be imported" in { implicit ee: EE =>
+    "be imported" in {
       def input = getClass.getResourceAsStream("/quiz.json")
       val expected = List("""{"_id":1,"name":"dave123","quiz":1,"score":85}""", """{"_id":2,"name":"dave2","quiz":1,"score":90}""", """{"_id":3,"name":"ahn","quiz":1,"score":71}""", """{"_id":4,"name":"li","quiz":2,"score":96}""", """{"_id":5,"name":"annT","quiz":2,"score":77}""", """{"_id":6,"name":"ty","quiz":2,"score":82}""")
 

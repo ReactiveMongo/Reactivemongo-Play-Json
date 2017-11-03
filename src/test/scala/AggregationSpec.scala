@@ -2,11 +2,13 @@ import scala.concurrent.Future
 
 import play.api.libs.json.{ Json, JsObject }, Json.{ obj => document, toJson }
 
-import org.specs2.concurrent.{ ExecutionEnv => EE }
+import org.specs2.concurrent.ExecutionEnv
 
 import reactivemongo.play.json._, collection._
 
-object AggregationSpec extends org.specs2.mutable.Specification {
+class AggregationSpec(implicit ee: ExecutionEnv)
+  extends org.specs2.mutable.Specification {
+
   "Aggregation framework" title
 
   import Common._
@@ -45,7 +47,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
   )
 
   "Zip codes" should {
-    "be inserted" in { implicit ee: EE =>
+    "be inserted" in {
       def insert(data: List[ZipCode]): Future[Unit] = data.headOption match {
         case Some(zip) => collection.insert(zip).flatMap(_ => insert(data.tail))
         case _         => Future.successful({})
@@ -54,7 +56,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
       insert(zipCodes) must beEqualTo({}).await(1, timeout)
     } tag ("foo")
 
-    "return states with populations above 10000000" in { implicit ee: EE =>
+    "return states with populations above 10000000" in {
       // http://docs.mongodb.org/manual/tutorial/aggregation-zip-code-data-set/#return-states-with-populations-above-10-million
       val expected = List(
         document("_id" -> "JP", "totalPop" -> 13185702L),
@@ -67,7 +69,7 @@ object AggregationSpec extends org.specs2.mutable.Specification {
         map(_.firstBatch) must beEqualTo(expected).await(1, timeout)
     }
 
-    "explain simple result" in { implicit ee: EE =>
+    "explain simple result" in {
       collection.aggregate(Group(toJson("$state"))(
         "totalPop" -> SumField("population")
       ), List(Match(document("totalPop" -> document("$gte" -> 10000000L)))),
@@ -95,29 +97,29 @@ object AggregationSpec extends org.specs2.mutable.Specification {
           AggregationFramework.AvgField("pop"))
       )
 
-      "successfully as a single batch" in { implicit ee: EE =>
+      "successfully as a single batch" in {
         collection.aggregate(firstOp, pipeline).map(_.firstBatch).
           aka("results") must beEqualTo(expected).await(1, timeout)
       }
 
       "with cursor" >> {
-        def collect(upTo: Int = Int.MaxValue)(implicit ee: EE) =
+        def collect(upTo: Int = Int.MaxValue) =
           collection.aggregate1[JsObject](firstOp, pipeline,
             batchSize = Some(1)).collect[List](upTo)
 
-        "without limit (maxDocs)" in { implicit ee: EE =>
+        "without limit (maxDocs)" in {
           collect() aka "cursor result" must beEqualTo(expected).
             await(1, timeout)
         }
 
-        "with limit (maxDocs)" in { implicit ee: EE =>
+        "with limit (maxDocs)" in {
           collect(2) aka "cursor result" must beEqualTo(expected take 2).
             await(1, timeout)
         }
       }
     }
 
-    "return largest and smallest cities by state" in { implicit ee: EE =>
+    "return largest and smallest cities by state" in {
       // See http://docs.mongodb.org/manual/tutorial/aggregation-zip-code-data-set/#return-largest-and-smallest-cities-by-state
       val expected = List(
         document(
@@ -173,13 +175,13 @@ object AggregationSpec extends org.specs2.mutable.Specification {
         await(1, timeout)
     }
 
-    "return distinct states" in { implicit ee: EE =>
+    "return distinct states" in {
       collection.distinct[String, Set]("state").
         aka("states") must beEqualTo(Set("NY", "FR", "JP")).
         await(1, timeout)
     }
 
-    "return a random sample" in { implicit ee: EE =>
+    "return a random sample" in {
       collection.aggregate(Sample(2)).map(_.head[ZipCode].
         filter(zipCodes.contains).size) must beEqualTo(2).await(1, timeout)
     } tag "not_mongo26"

@@ -95,7 +95,7 @@ unmanagedSourceDirectories in Compile += {
 
 libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % "provided" cross CrossVersion.binary,
-  "com.typesafe.play" %% "play-json" % playVer.value % "provided" cross CrossVersion.binary)
+  "com.typesafe.play" %% "play-json" % playVer.value % Provided cross CrossVersion.binary)
 
 // Test
 unmanagedSourceDirectories in Test += {
@@ -113,7 +113,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "3.9.4",
+  "org.specs2" %% "specs2-core" % "4.0.1",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI
@@ -140,13 +140,13 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
       if (/* time-compat exclusions: */
         flags.contains("PLAY_VERSION" -> playUpper)) {
         List(
-          "    - scala: 2.11.8",
+          "    - scala: 2.11.11",
           s"      env: ${integrationVars(flags)}"
         )
       } else if (/* time-compat exclusions: */
         flags.contains("PLAY_VERSION" -> playLower)) {
         List(
-          "    - scala: 2.12.2",
+          "    - scala: ${scalaVersion.value}",
           s"      env: ${integrationVars(flags)}"
         )
       } else List.empty[String]
@@ -257,7 +257,7 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
-Scapegoat.settings
+//Scapegoat.settings
 
 lazy val root = (project in file(".")).
   settings(publishSettings ++ Release.settings)
