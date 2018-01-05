@@ -120,16 +120,12 @@ object JSONBatchCommands
   implicit object DistinctResultReader
     extends pack.Reader[DistinctCommand.DistinctResult] {
 
-    import scala.collection.immutable.ListSet
-
     private val path = JsPath \ "values"
 
     def reads(js: JsValue): JsResult[DistinctCommand.DistinctResult] =
       (js \ "values").toEither match {
         case Right(JsArray(values)) =>
-          JsSuccess(DistinctCommand.DistinctResult(
-            ListSet.empty[JsValue] ++ values
-          ))
+          JsSuccess(DistinctCommand.DistinctResult(values.toList))
 
         case Right(v)    => JsError(path, s"invalid JSON: $v")
         case Left(error) => JsError(Seq(path -> Seq(error)))
