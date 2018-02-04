@@ -3,7 +3,7 @@
 SCRIPT_DIR=`dirname $0 | sed -e "s|^\./|$PWD/|"`
 
 # Install MongoDB
-MONGO_HOME="$HOME/mongodb-linux-x86_64-amazon-3.4.5"
+MONGO_HOME="$HOME/mongodb-linux-x86_64-amazon-3.4.10"
 
 if [ ! -x "$MONGO_HOME/bin/mongod" ]; then
     if [ -d "$MONGO_HOME" ]; then
@@ -11,7 +11,7 @@ if [ ! -x "$MONGO_HOME/bin/mongod" ]; then
     fi
 
     cd "$HOME"
-    curl -s -o /tmp/mongodb.tgz https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.5.tgz | tar -xzf -
+    curl -s -o - https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.10.tgz | tar -xzf -
     chmod u+x "$MONGO_HOME/bin/mongod"
 fi
 
@@ -59,7 +59,14 @@ PATH="$PATH"
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 EOF
 
-numactl --interleave=all mongod -f /tmp/mongod.conf --fork
+MONGOD_CMD="mongod -f /tmp/mongod.conf --fork"
+
+if [ `which numactl | wc -l` -gt 0 ]; then
+    numactl --interleave=all $MONGOD_CMD
+else
+    $MONGOD_CMD
+fi
+
 MONGOD_ST="$?"
 
 if [ ! $MONGOD_ST -eq 0 ]; then

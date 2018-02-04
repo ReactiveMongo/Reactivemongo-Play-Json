@@ -26,4 +26,9 @@ if [ `sbt 'show version' 2>&1 | tail -n 1 | cut -d ' ' -f 2 | grep -- '-SNAPSHOT
   perl -pe "s|resolvers |resolvers += \"Sonatype Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots/\"\n\r\nresolvers |" < "$SCRIPT_DIR/../build.sbt" > /tmp/build.sbt && mv /tmp/build.sbt "$SCRIPT_DIR/../build.sbt"
 fi
 
-sbt ++$TRAVIS_SCALA_VERSION ";findbugs ;mimaReportBinaryIssues ;testOnly *"
+TEST_OPTS="exclude mongo2"
+
+TEST_CMD=";findbugs ;mimaReportBinaryIssues"
+TEST_CMD="$TEST_CMD; testQuick * -- $TEST_OPTS"
+
+sbt ++$TRAVIS_SCALA_VERSION "$TEST_CMD"

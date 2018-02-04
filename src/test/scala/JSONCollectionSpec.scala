@@ -120,35 +120,83 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
   }
 
   "JSONQueryBuilder.merge" should {
-    "write an JsObject with mongo query only if there are not options defined" in {
-      val builder = JSONQueryBuilder(
-        collection = collection,
-        failover = new FailoverStrategy(),
-        queryOption = Option(Json.obj("username" -> "John Doe"))
-      )
+    section("mongo2")
+    "for MongoDB 2.6" >> {
+      "write an JsObject with mongo query only if there are not options defined" in {
+        val builder = JSONQueryBuilder(
+          collection = collection,
+          failover = new FailoverStrategy(),
+          queryOption = Option(Json.obj("username" -> "John Doe"))
+        )
 
-      builder.merge(ReadPreference.Primary).toString.
-        aka("merged") must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"}}""")
-    }
+        val expected = Json.parse("""{"$query":{"username":"John Doe"},"$readPreference":{"mode":"primary"}}""")
 
-    "write an JsObject with only defined options" >> {
-      val builder1 = JSONQueryBuilder(
-        collection = collection,
-        failover = new FailoverStrategy(),
-        queryOption = Option(Json.obj("username" -> "John Doe")),
-        sortOption = Option(Json.obj("age" -> 1))
-      )
-
-      "with query builder #1" in {
-        builder1.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1}}""")
+        builder.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
       }
 
-      "with query builder #2" in {
-        val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
+      "write an JsObject with only defined options" >> {
+        val builder1 = JSONQueryBuilder(
+          collection = collection,
+          failover = new FailoverStrategy(),
+          queryOption = Option(Json.obj("username" -> "John Doe")),
+          sortOption = Option(Json.obj("age" -> 1))
+        )
 
-        builder2.merge(ReadPreference.Primary).toString must beEqualTo("""{"$readPreference":{"mode":"primary"},"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age"}""")
+        "with query builder #1" in {
+          val expected = Json.parse("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$readPreference":{"mode":"primary"}}""")
+
+          builder1.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
+        }
+
+        "with query builder #2" in {
+          val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
+
+          val expected = Json.parse("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age","$readPreference":{"mode":"primary"}}""")
+
+          builder2.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
+        }
       }
     }
+    section("mongo2")
+
+    section("gt_mongo32")
+    "for MongoDB >3.2" >> {
+      "write an JsObject with mongo query only if there are not options defined" in {
+        val builder = JSONQueryBuilder(
+          collection = collection,
+          failover = new FailoverStrategy(),
+          queryOption = Option(Json.obj("username" -> "John Doe"))
+        )
+
+        val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"snapshot":false,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"$$readPreference":{"mode":"primary"}}""")
+
+        builder.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
+      }
+
+      "write an JsObject with only defined options" >> {
+        val builder1 = JSONQueryBuilder(
+          collection = collection,
+          failover = new FailoverStrategy(),
+          queryOption = Option(Json.obj("username" -> "John Doe")),
+          sortOption = Option(Json.obj("age" -> 1))
+        )
+
+        "with query builder #1" in {
+          val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"snapshot":false,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"sort":{"age":1},"$$readPreference":{"mode":"primary"}}""")
+
+          builder1.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
+        }
+
+        "with query builder #2" in {
+          val builder2 = builder1.copy(commentString = Option("get john doe users sorted by age"))
+
+          val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"snapshot":false,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"sort":{"age":1},"comment":"get john doe users sorted by age","$$readPreference":{"mode":"primary"}}""")
+
+          builder2.merge(ReadPreference.Primary) must beTypedEqualTo(expected)
+        }
+      }
+    }
+    section("gt_mongo32")
   }
 
   "JSON collection" should {

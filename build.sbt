@@ -20,7 +20,7 @@ version ~= { ver =>
   }
 }
 
-crossScalaVersions in ThisBuild := Seq("2.11.11", scalaVersion.value)
+crossScalaVersions in ThisBuild := Seq("2.11.12", scalaVersion.value)
 
 crossVersion in ThisBuild := CrossVersion.binary
 
@@ -29,7 +29,7 @@ scalacOptions ++= Seq(
   "-unchecked",
   "-deprecation",
   "-feature",
-  "-Xfatal-warnings",
+  //"-Xfatal-warnings",
   "-Xlint",
   "-Ywarn-numeric-widen",
   "-Ywarn-dead-code",
@@ -94,7 +94,7 @@ unmanagedSourceDirectories in Compile += {
 }
 
 libraryDependencies ++= Seq(
-  "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % "provided" cross CrossVersion.binary,
+  "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % Provided cross CrossVersion.binary,
   "com.typesafe.play" %% "play-json" % playVer.value % Provided cross CrossVersion.binary)
 
 // Test
@@ -185,7 +185,19 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       ProblemFilters.exclude[UpdateForwarderBodyProblem](
         "reactivemongo.play.json.BSONFormats#PartialFormat.writes"),
       ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialWrites.reactivemongo$play$json$BSONFormats$PartialWrites$$$outer"),
-      ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialReads.reactivemongo$play$json$BSONFormats$PartialReads$$$outer")
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialReads.reactivemongo$play$json$BSONFormats$PartialReads$$$outer"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.commands.JSONAggregationFramework.PipelineOperator"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONCollection.sister"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JSONCollection.aggregate"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JSONCollection.aggregate"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JSONCollection.aggregate1"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONCollection.sister$default$2"),
+      ProblemFilters.exclude[FinalMethodProblem]("reactivemongo.play.json.collection.JSONCollection.fullCollectionName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONCollection.sister$default$3"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONQueryBuilder.merge"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONQueryBuilder.cursor"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONQueryBuilder.cursor"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONBatchCommands.LastErrorReader")
     )
   }
 )

@@ -54,7 +54,7 @@ class AggregationSpec(implicit ee: ExecutionEnv)
       }
 
       insert(zipCodes) must beEqualTo({}).await(1, timeout)
-    } tag ("foo")
+    }
 
     "return states with populations above 10000000" in {
       // http://docs.mongodb.org/manual/tutorial/aggregation-zip-code-data-set/#return-states-with-populations-above-10-million
@@ -184,6 +184,6 @@ class AggregationSpec(implicit ee: ExecutionEnv)
     "return a random sample" in {
       collection.aggregate(Sample(2)).map(_.head[ZipCode].
         filter(zipCodes.contains).size) must beEqualTo(2).await(1, timeout)
-    } tag "not_mongo26"
+    } tag "gt_mongo32"
   }
 }

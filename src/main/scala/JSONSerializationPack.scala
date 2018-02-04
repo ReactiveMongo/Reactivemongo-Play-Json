@@ -1,6 +1,7 @@
 package reactivemongo.play.json
 
 import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
 import play.api.libs.json.{
   JsArray,
@@ -33,6 +34,9 @@ object JSONSerializationPack extends SerializationPack { self =>
   type Reader[A] = Reads[A]
   type NarrowValueReader[A] = Reads[A]
   private[reactivemongo] type WidenValueReader[A] = Reads[A]
+
+  private[reactivemongo] val IsDocument =
+    scala.reflect.ClassTag[Document](classOf[JsObject])
 
   object IdentityReader extends Reader[Document] {
     def reads(js: JsValue): JsResult[Document] = js match {
@@ -130,11 +134,29 @@ object JSONSerializationPack extends SerializationPack { self =>
 
   private def bsonSize(elements: Iterable[(String, JsValue)]): Int =
     elements.foldLeft(5) {
-      case (sz, (n, v)) =>
-        sz + 2 + n.getBytes.size + bsonSize(v)
+      case (sz, (n, v)) => sz + 2 + n.getBytes.size + bsonSize(v)
     }
 
   override private[reactivemongo] def newBuilder: SerializationPack.Builder[JSONSerializationPack.type] = Builder
+
+  override private[reactivemongo] def newDecoder: SerializationPack.Decoder[JSONSerializationPack.type] = Decoder
+
+  private[reactivemongo] def document(doc: reactivemongo.bson.BSONDocument): JsObject = BSONFormats.toJSON(doc) match {
+    case obj @ JsObject(_) => obj
+    case _                 => throw new JSONException("error.expected.jsobject")
+  }
+
+  private[reactivemongo] def reader[A](f: JsObject => A): Reads[A] = Reads[A] {
+    _ match {
+      case obj @ JsObject(_) => try {
+        JsSuccess(f(obj))
+      } catch {
+        case NonFatal(cause) => JsError(cause.getMessage)
+      }
+
+      case _ => JsError("error.expected.jsobject")
+    }
+  }
 
   // ---
 
@@ -162,5 +184,33 @@ object JSONSerializationPack extends SerializationPack { self =>
     def double(d: Double): Value = JsNumber(BigDecimal(d.toString))
 
     def string(s: String): Value = JsString(s)
+  }
+
+  private object Decoder
+    extends SerializationPack.Decoder[JSONSerializationPack.type] {
+    protected val pack = self
+
+    def booleanLike(document: JsObject, name: String): Option[Boolean] =
+      document.value.get(name).collect {
+        case JsBoolean(b) => b
+        case JsNumber(n)  => n.intValue > 0
+      }
+
+    def child(document: JsObject, name: String): Option[JsObject] =
+      (document \ name).asOpt[JsObject]
+
+    def children(document: JsObject, name: String): List[JsObject] = {
+      (document \ name).asOpt[List[JsObject]].
+        getOrElse(List.empty[JsObject])
+    }
+
+    def double(document: JsObject, name: String): Option[Double] =
+      (document \ name).asOpt[Double]
+
+    def int(document: JsObject, name: String): Option[Int] =
+      (document \ name).asOpt[Int]
+
+    def string(document: JsObject, name: String): Option[String] =
+      (document \ name).asOpt[String]
   }
 }
