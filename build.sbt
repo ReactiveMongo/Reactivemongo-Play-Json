@@ -9,7 +9,7 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.12.4"
+scalaVersion in ThisBuild := "2.12.6"
 
 version ~= { ver =>
   sys.env.get("RELEASE_SUFFIX") match {
@@ -113,7 +113,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "4.0.1",
+  "org.specs2" %% "specs2-core" % "4.2.0",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI
@@ -140,7 +140,7 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
       if (/* time-compat exclusions: */
         flags.contains("PLAY_VERSION" -> playUpper)) {
         List(
-          "    - scala: 2.11.11",
+          "    - scala: 2.11.12",
           s"      env: ${integrationVars(flags)}"
         )
       } else if (/* time-compat exclusions: */
@@ -157,17 +157,45 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
 }
 
 // Publish
-val previousVersion = "0.12.0"
+val previousVersion = "0.12.1"
 val mimaSettings = mimaDefaultSettings ++ Seq(
-  mimaPreviousArtifacts := {
-    if (!scalaVersion.value.startsWith("2.12")) {
-      Set(organization.value %% moduleName.value % previousVersion)
-    } else {
-      Set.empty
-    }
-  },
+  mimaPreviousArtifacts := Set(
+    organization.value %% moduleName.value % previousVersion),
   mimaBinaryIssueFilters ++= {
-    Seq(
+    def playFilters = {
+      // ValidationError breaking change in Play 2.6
+      (Seq("ObjectID", "Binary", "String", "Symbol", "MaxKey", "Undefined",
+        "Long", "Array", "Null", "MinKey", "DateTime", "Integer", "Double",
+        "Timestamp", "Regex", "Document", "Boolean", "JavaScript").
+        flatMap { t =>
+          Seq("filter", "filterNot", "collect").map { m =>
+            ProblemFilters.exclude[IncompatibleMethTypeProblem](
+              s"reactivemongo.play.json.BSONFormats#BSON${t}Format.${m}")
+          }
+        }) ++ (Seq("LastError", "Update", "Upserted", "DefaultWriteResult",
+          "CountResult", "WriteConcernError", "WriteError", "DistinctResult"
+        ).flatMap { t =>
+          Seq("filter", "filterNot", "collect").map { m =>
+            ProblemFilters.exclude[IncompatibleMethTypeProblem](s"reactivemongo.play.json.collection.JSONBatchCommands#${t}Reader.${m}")
+          }
+        }) ++ (Seq(
+          "LowerImplicitBSONHandlers#BSONValueReads",
+          "JSONSerializationPack#IdentityReader",
+          "commands.JSONFindAndModifyImplicits#FindAndModifyResultReader",
+          "commands.CommonImplicits#UnitBoxReader",
+          "commands.JSONAggregationImplicits#AggregationResultReader"
+        ).flatMap { t =>
+          Seq("filter", "filterNot", "collect").map { m =>
+            ProblemFilters.exclude[IncompatibleMethTypeProblem](
+              s"reactivemongo.play.json.${t}.${m}")
+          }
+        })
+    }
+
+    playFilters ++ (Seq("Writes", "Reads").map { m =>
+      ProblemFilters.exclude[InheritedNewAbstractMethodProblem](s"reactivemongo.play.json.BSONFormats#PartialFormat.reactivemongo$$play$$json$$BSONFormats$$Partial${m}$$$$$$outer")
+    }) ++ Seq(
+      ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONTimestampFormat$TimeValue$"),
       ProblemFilters.exclude[MissingClassProblem](

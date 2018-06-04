@@ -3,8 +3,8 @@ import sbt._
 
 object Compiler {
   lazy val settings = Seq(
-    scalaVersion := "2.12.4",
-    crossScalaVersions := Seq("2.11.11", scalaVersion.value),
+    scalaVersion := "2.12.6",
+    crossScalaVersions := Seq("2.11.12", scalaVersion.value),
     crossVersion in ThisBuild := CrossVersion.binary,
     scalacOptions ++= Seq(
       "-encoding", "UTF-8", "-target:jvm-1.8",

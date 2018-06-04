@@ -15,8 +15,8 @@ cache:
   - $HOME/ssl
   - $HOME/mongodb-linux-x86_64-amazon-3.4.5
 scala:
-- 2.11.11
-- 2.12.3
+- 2.11.12
+- 2.12.6
 jdk:
 - oraclejdk8
 env:
@@ -24,9 +24,9 @@ env:
   - PLAY_VERSION=2.6.1
 matrix: 
   exclude: 
-    - scala: 2.12.3
+    - scala: 2.12.6
       env: PLAY_VERSION=2.5.0
-    - scala: 2.11.11
+    - scala: 2.11.12
       env: PLAY_VERSION=2.6.1
 before_install: ./.ci_scripts/beforeInstall.sh
 script: ./.ci_scripts/validate.sh

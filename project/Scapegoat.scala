@@ -1,6 +1,6 @@
+/*
 import sbt._
 
-/*
 import com.sksamuel.scapegoat.sbt.ScapegoatSbtPlugin
 
 object Scapegoat {

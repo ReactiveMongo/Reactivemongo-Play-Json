@@ -190,6 +190,8 @@ object JSONSerializationPack extends SerializationPack { self =>
     extends SerializationPack.Decoder[JSONSerializationPack.type] {
     protected val pack = self
 
+    def names(document: JsObject): Set[String] = document.keys.toSet
+
     def booleanLike(document: JsObject, name: String): Option[Boolean] =
       document.value.get(name).collect {
         case JsBoolean(b) => b
@@ -209,6 +211,9 @@ object JSONSerializationPack extends SerializationPack { self =>
 
     def int(document: JsObject, name: String): Option[Int] =
       (document \ name).asOpt[Int]
+
+    def long(document: JsObject, name: String): Option[Long] =
+      (document \ name).asOpt[Long]
 
     def string(document: JsObject, name: String): Option[String] =
       (document \ name).asOpt[String]

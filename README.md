@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 
 [![Maven](https://img.shields.io/maven-central/v/org.reactivemongo/reactivemongo-play-json_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Creactivemongo-play-json) [![Javadocs](https://javadoc.io/badge/org.reactivemongo/reactivemongo-play-json_2.12.svg)](https://javadoc.io/doc/org.reactivemongo/reactivemongo-play-json_2.12)
 
-The documentation is [available online](http://reactivemongo.org/releases/0.12/documentation/json/overview.html).
+The documentation is [available online](http://reactivemongo.org/releases/0.1x/documentation/json/overview.html).
 
 > More [examples[src/test/scala/JSONCollectionSpec.scala]
 
