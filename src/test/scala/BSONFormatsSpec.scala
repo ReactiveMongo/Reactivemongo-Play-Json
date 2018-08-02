@@ -1,4 +1,11 @@
-import play.api.libs.json.{ JsError, Json, JsResult, JsSuccess, __ }
+import play.api.libs.json.{
+  JsError,
+  Json,
+  JsResult,
+  JsSuccess,
+  __
+}
+
 import reactivemongo.bson._
 import reactivemongo.play.json.BSONFormats._
 
@@ -11,7 +18,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val oidAgain = Json.fromJson[BSONObjectID](Json.toJson(oid))
 
       oidAgain must beLike[JsResult[BSONObjectID]] {
-        case JsSuccess(v, _) => v must_== oid
+        case JsSuccess(v, _) => v must_=== oid
       }
     }
 
@@ -29,7 +36,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     "write BSONObjectID as JSON" in {
       val oid = BSONObjectID.generate
 
-      toJSON(oid) mustEqual Json.toJson(oid)
+      toJSON(oid) must_=== Json.toJson(oid)
     }
 
     // ---
@@ -45,7 +52,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       "read from simple string representation" in {
         Json.toJson(hexaValue).
           validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
-            case JsSuccess(bin, _) => bin must_== userDefinedBin
+            case JsSuccess(bin, _) => bin must_=== userDefinedBin
           }
       }
 
@@ -54,13 +61,13 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
 
         "without explicit subtype" in {
           baseObj.validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
-            case JsSuccess(bin, _) => bin must_== userDefinedBin and {
+            case JsSuccess(bin, _) => bin must_=== userDefinedBin and {
               // Even if default the subtype on read, always write it
 
               val explicitJsSubtpe = Json.toJson(Converters.hex2Str(
                 Array(Subtype.UserDefinedSubtype.value)))
 
-              Json.toJson(bin) must_== (baseObj + (
+              Json.toJson(bin) must_=== (baseObj + (
                 f"$$type" -> explicitJsSubtpe))
             }
           }
@@ -73,8 +80,8 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
           val withTpe = baseObj + (f"$$type" -> Json.toJson(hexaGeneric))
 
           withTpe.validate[BSONBinary] must beLike[JsResult[BSONBinary]] {
-            case JsSuccess(bin, _) => bin must_== genericBin and {
-              Json.toJson(bin) must_== withTpe
+            case JsSuccess(bin, _) => bin must_=== genericBin and {
+              Json.toJson(bin) must_=== withTpe
             }
           }
         }
@@ -94,12 +101,12 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val code2 = "lorem();ipsum('bar')"
       s"""from BSONJavaScript("$code2")""" in {
         Json.toJson(BSONJavaScript(code2)).
-          aka("from BSON") must_== Json.obj(f"$$javascript" -> code2)
+          aka("from BSON") must_=== Json.obj(f"$$javascript" -> code2)
       }
 
       s"from BSONValue" in {
         val bson: BSONValue = BSONJavaScript("foo()")
-        Json.toJson(bson) must_== Json.obj(f"$$javascript" -> "foo()")
+        Json.toJson(bson) must_=== Json.obj(f"$$javascript" -> "foo()")
       }
     }
 
@@ -113,8 +120,8 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       ))
       val expectedJson = legacyJson ++ strictJson
 
-      toJSON(bsonTs) must_== expectedJson and (
-        Json.toJson(bsonTs) must_== expectedJson
+      toJSON(bsonTs) must_=== expectedJson and (
+        Json.toJson(bsonTs) must_=== expectedJson
       ) and (
           Json.fromJson[BSONTimestamp](legacyJson) must beLike[JsResult[_]] {
             case JsSuccess(ts, _) => ts must_== bsonTs
@@ -129,24 +136,24 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     "handle BSONUndefined" in {
       val expectedJson = Json.obj(f"$$undefined" -> true)
 
-      toJSON(BSONUndefined) must_== expectedJson and (
-        Json.toJson(BSONUndefined) must_== expectedJson
+      toJSON(BSONUndefined) must_=== expectedJson and (
+        Json.toJson(BSONUndefined) must_=== expectedJson
       )
     }
 
     "handle BSONMinKey" in {
       val expectedJson = Json.obj(f"$$minKey" -> 1)
 
-      toJSON(BSONMinKey) must_== expectedJson and (
-        Json.toJson(BSONMinKey) must_== expectedJson
+      toJSON(BSONMinKey) must_=== expectedJson and (
+        Json.toJson(BSONMinKey) must_=== expectedJson
       )
     }
 
     "handle BSONMaxKey" in {
       val expectedJson = Json.obj(f"$$maxKey" -> 1)
 
-      toJSON(BSONMaxKey) must_== expectedJson and (
-        Json.toJson(BSONMaxKey) must_== expectedJson
+      toJSON(BSONMaxKey) must_=== expectedJson and (
+        Json.toJson(BSONMaxKey) must_=== expectedJson
       )
     }
 
@@ -156,7 +163,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jdt = Json.obj(f"$$date" -> timestamp)
 
       Json.fromJson[BSONDateTime](jdt) must beLike {
-        case JsSuccess(res, _) => res must_== dt
+        case JsSuccess(res, _) => res must_=== dt
       }
     }
 
@@ -166,7 +173,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jdt = Json.obj(f"$$date" -> Json.obj(f"$$numberLong" -> timestamp))
 
       Json.fromJson[BSONDateTime](jdt) must beLike {
-        case JsSuccess(res, _) => res must_== dt
+        case JsSuccess(res, _) => res must_=== dt
       }
     }
 
@@ -181,7 +188,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       )
       val doc = Json.fromJson[BSONDocument](json)
 
-      Json.toJson(doc.get) must_== json
+      Json.toJson(doc.get) must_=== json
     }
 
     "handle BSONSymbol" in {
@@ -210,42 +217,43 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     f"""convert JSON regex { "$$regex": "^toto", "$$options": "i" }""" in {
       val js = Json.obj(f"$$regex" -> "^toto", f"$$options" -> "i")
       val bson = Json.fromJson[BSONRegex](js).get
-      bson mustEqual BSONRegex("^toto", "i")
-      val deser = Json.toJson(bson)
-      js mustEqual deser
+
+      bson must_=== BSONRegex("^toto", "i") and {
+        js must_== Json.toJson(bson)
+      }
     }
 
     f"""convert JSON regex { "$$options": "i", "$$regex": "^toto" }""" in {
       val js = Json.obj(f"$$options" -> "i", f"$$regex" -> "^toto")
       val bson = Json.fromJson[BSONRegex](js).get
-      bson mustEqual BSONRegex("^toto", "i")
-      Json.toJson(bson) must_== Json.obj(f"$$regex" -> "^toto", f"$$options" -> "i")
+
+      bson must_=== BSONRegex("^toto", "i") and {
+        Json.toJson(bson) must_== Json.obj(
+          f"$$regex" -> "^toto", f"$$options" -> "i")
+      }
     }
 
     f"""convert JSON regex { "$$regex": "^toto" }""" in {
       val js = Json.obj(f"$$regex" -> "^toto")
       val bson = Json.fromJson[BSONRegex](js).get
 
-      bson mustEqual BSONRegex("^toto", "") and (js mustEqual Json.toJson(bson))
+      bson must_=== BSONRegex("^toto", "") and {
+        js must_== Json.toJson(bson)
+      }
     }
 
     f"""fail converting json regex { "$$options": "i", "$$regex": 98 }""" in {
       val js = Json.obj(f"$$options" -> "i", f"$$regex" -> 98)
-      val result = Json.fromJson[BSONRegex](js)
-      result.fold(
-        x => {
-          x.head._1 mustEqual (__ \ f"$$regex")
-        }, x => failure(s"got a JsSuccess = $result instead of a JsError")
-      )
 
-      ok
+      Json.fromJson[BSONRegex](js).asEither.left.
+        map(_.map(_._1)).left.toOption must beSome(List((__ \ f"$$regex")))
     }
 
     f"""convert legacy timestamp { "$$time": 1412180887, "$$i": 6 }""" in {
       val jsonTs = Json.parse(f"""{ "$$time": 1412180887, "$$i": 6 }""")
 
       Json.fromJson[BSONTimestamp](jsonTs) must beLike {
-        case JsSuccess(ts, _) => ts must_== BSONTimestamp(6065270725701271558L)
+        case JsSuccess(ts, _) => ts must_=== BSONTimestamp(6065270725701271558L)
       }
     }
 
@@ -253,7 +261,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jsonTs = Json.parse(f"""{ "$$timestamp": {"t":1412180887,"i":6} }""")
 
       Json.fromJson[BSONTimestamp](jsonTs) must beLike {
-        case JsSuccess(ts, _) => ts must_== BSONTimestamp(6065270725701271558L)
+        case JsSuccess(ts, _) => ts must_=== BSONTimestamp(6065270725701271558L)
       }
     }
 
@@ -261,7 +269,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jsonTs = Json.parse(f"""{ "$$undefined": true }""")
 
       Json.fromJson[BSONUndefined.type](jsonTs) must beLike {
-        case JsSuccess(ts, _) => ts must_== BSONUndefined
+        case JsSuccess(ts, _) => ts must_=== BSONUndefined
       }
     }
 
@@ -269,7 +277,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jsonTs = Json.parse(f"""{ "$$minKey": 1 }""")
 
       Json.fromJson[BSONMinKey.type](jsonTs) must beLike {
-        case JsSuccess(mk, _) => mk must_== BSONMinKey
+        case JsSuccess(mk, _) => mk must_=== BSONMinKey
       }
     }
 
@@ -277,7 +285,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val jsonTs = Json.parse(f"""{ "$$maxKey": 1 }""")
 
       Json.fromJson[BSONMaxKey.type](jsonTs) must beLike {
-        case JsSuccess(mk, _) => mk must_== BSONMaxKey
+        case JsSuccess(mk, _) => mk must_=== BSONMaxKey
       }
     }
   }

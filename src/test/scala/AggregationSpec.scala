@@ -4,6 +4,8 @@ import play.api.libs.json.{ Json, JsObject }, Json.{ obj => document, toJson }
 
 import org.specs2.concurrent.ExecutionEnv
 
+import reactivemongo.api.Cursor
+
 import reactivemongo.play.json._, collection._
 
 class AggregationSpec(implicit ee: ExecutionEnv)
@@ -16,18 +18,6 @@ class AggregationSpec(implicit ee: ExecutionEnv)
   sequential
 
   val collection = db.collection[JSONCollection]("zipcodes")
-  import collection.BatchCommands.AggregationFramework
-  import AggregationFramework.{
-    FirstField,
-    Group,
-    LastField,
-    Match,
-    Project,
-    Sort,
-    Ascending,
-    Sample,
-    SumField
-  }
 
   case class Location(lon: Double, lat: Double)
 
@@ -53,7 +43,7 @@ class AggregationSpec(implicit ee: ExecutionEnv)
         case _         => Future.successful({})
       }
 
-      insert(zipCodes) must beEqualTo({}).await(1, timeout)
+      insert(zipCodes) must beTypedEqualTo({}).await(1, timeout)
     }
 
     "return states with populations above 10000000" in {
@@ -63,21 +53,29 @@ class AggregationSpec(implicit ee: ExecutionEnv)
         document("_id" -> "NY", "totalPop" -> 19746227L)
       )
 
-      collection.aggregate(Group(toJson("$state"))(
-        "totalPop" -> SumField("population")
-      ), List(Match(document("totalPop" -> document("$gte" -> 10000000L))))).
-        map(_.firstBatch) must beEqualTo(expected).await(1, timeout)
+      collection.aggregateWith[JsObject]() { agg =>
+        import agg.{ Group, Match, SumField }
+
+        Group(toJson("$state"))(
+          "totalPop" -> SumField("population")
+        ) -> List(Match(document("totalPop" -> document("$gte" -> 10000000L))))
+      }.collect(3, Cursor.FailOnError[List[JsObject]]()).
+        aka("aggregated") must beTypedEqualTo(expected).await(1, timeout)
     }
 
     "explain simple result" in {
-      collection.aggregate(Group(toJson("$state"))(
-        "totalPop" -> SumField("population")
-      ), List(Match(document("totalPop" -> document("$gte" -> 10000000L)))),
-        explain = true).map(_.firstBatch) must beLike[List[JsObject]] {
-        case explainResult :: Nil =>
-          (explainResult \ "stages").asOpt[List[JsObject]] must beSome
+      collection.aggregateWith[JsObject](explain = true) { agg =>
+        import agg.{ Group, Match, SumField }
 
-      }.await(1, timeout)
+        Group(toJson("$state"))(
+          "totalPop" -> SumField("population")
+        ) -> List(Match(document("totalPop" -> document("$gte" -> 10000000L))))
+      }.collect(Int.MaxValue, Cursor.FailOnError[List[JsObject]]()).
+        aka("aggregated") must beLike[List[JsObject]] {
+          case explainResult :: Nil =>
+            (explainResult \ "stages").asOpt[List[JsObject]] must beSome
+
+        }.await(1, timeout)
     }
 
     "return average city population by state" >> {
@@ -88,32 +86,30 @@ class AggregationSpec(implicit ee: ExecutionEnv)
         document("_id" -> "JP", "avgCityPop" -> 6592851D)
       )
 
-      val firstOp = Group(document("state" -> "$state", "city" -> "$city"))(
-        "pop" -> SumField("population")
-      )
+      def collect(upTo: Int = Int.MaxValue) =
+        collection.aggregateWith[JsObject](batchSize = Some(upTo)) { agg =>
+          import agg.{ AvgField, Group, SumField }
 
-      val pipeline = List(
-        Group(toJson("$_id.state"))("avgCityPop" ->
-          AggregationFramework.AvgField("pop"))
-      )
+          Group(document("state" -> "$state", "city" -> "$city"))(
+            "pop" -> SumField("population")
+          ) -> List(
+              Group(toJson("$_id.state"))("avgCityPop" ->
+                AvgField("pop"))
+            )
+        }.collect(upTo, Cursor.FailOnError[List[JsObject]]())
 
       "successfully as a single batch" in {
-        collection.aggregate(firstOp, pipeline).map(_.firstBatch).
-          aka("results") must beEqualTo(expected).await(1, timeout)
+        collect(4) must beTypedEqualTo(expected).await(1, timeout)
       }
 
       "with cursor" >> {
-        def collect(upTo: Int = Int.MaxValue) =
-          collection.aggregate1[JsObject](firstOp, pipeline,
-            batchSize = Some(1)).collect[List](upTo)
-
         "without limit (maxDocs)" in {
-          collect() aka "cursor result" must beEqualTo(expected).
+          collect() aka "cursor result" must beTypedEqualTo(expected).
             await(1, timeout)
         }
 
         "with limit (maxDocs)" in {
-          collect(2) aka "cursor result" must beEqualTo(expected take 2).
+          collect(2) aka "cursor result" must beTypedEqualTo(expected take 2).
             await(1, timeout)
         }
       }
@@ -150,40 +146,51 @@ class AggregationSpec(implicit ee: ExecutionEnv)
         )
       )
 
-      collection.aggregate(
+      collection.aggregateWith[JsObject]() { agg =>
+        import agg.{
+          Ascending,
+          FirstField,
+          Group,
+          LastField,
+          Project,
+          SumField,
+          Sort
+        }
+
         Group(document("state" -> "$state", "city" -> "$city"))(
           "pop" -> SumField("population")
-        ),
-        List(
-          Sort(Ascending("population")),
-          Group(toJson("$_id.state"))(
-            "biggestCity" -> LastField("_id.city"),
-            "biggestPop" -> LastField("pop"),
-            "smallestCity" -> FirstField("_id.city"),
-            "smallestPop" -> FirstField("pop")
-          ),
-          Project(document("_id" -> 0, "state" -> "$_id",
-            "biggestCity" -> document(
-              "name" -> "$biggestCity", "population" -> "$biggestPop"
+        ) -> List(
+            Sort(Ascending("population")),
+            Group(toJson("$_id.state"))(
+              "biggestCity" -> LastField("_id.city"),
+              "biggestPop" -> LastField("pop"),
+              "smallestCity" -> FirstField("_id.city"),
+              "smallestPop" -> FirstField("pop")
             ),
-            "smallestCity" -> document(
-              "name" -> "$smallestCity", "population" -> "$smallestPop"
-            )))
-        )
-      ).
-        map(_.firstBatch) aka "results" must beEqualTo(expected).
-        await(1, timeout)
+            Project(document("_id" -> 0, "state" -> "$_id",
+              "biggestCity" -> document(
+                "name" -> "$biggestCity", "population" -> "$biggestPop"
+              ),
+              "smallestCity" -> document(
+                "name" -> "$smallestCity", "population" -> "$smallestPop"
+              )))
+          )
+      }.collect(Int.MaxValue, Cursor.FailOnError[List[JsObject]]()).
+        aka("results") must beTypedEqualTo(expected).await(1, timeout)
     }
 
     "return distinct states" in {
       collection.distinct[String, Set]("state").
-        aka("states") must beEqualTo(Set("NY", "FR", "JP")).
+        aka("states") must beTypedEqualTo(Set("NY", "FR", "JP")).
         await(1, timeout)
     }
 
     "return a random sample" in {
-      collection.aggregate(Sample(2)).map(_.head[ZipCode].
-        filter(zipCodes.contains).size) must beEqualTo(2).await(1, timeout)
+      collection.aggregateWith[ZipCode]() { agg =>
+        agg.Sample(2) -> List.empty
+      }.collect(Int.MaxValue, Cursor.FailOnError[List[ZipCode]]()).
+        map(_.filter(zipCodes.contains).size).
+        aka("aggregated") must beTypedEqualTo(2).await(1, timeout)
     } tag "gt_mongo32"
   }
 }

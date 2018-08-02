@@ -1,5 +1,7 @@
 package reactivemongo.play.json
 
+import java.util.UUID
+
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
@@ -21,7 +23,9 @@ import play.api.libs.json.{
 }
 
 import reactivemongo.api.SerializationPack
-import reactivemongo.bson.BSONDocument
+
+import reactivemongo.bson.utils.Converters
+import reactivemongo.bson.{ BSONDocument, Subtype }
 import reactivemongo.bson.buffer.{ ReadableBuffer, WritableBuffer }
 
 import reactivemongo.play.json.commands.JSONCommandError
@@ -146,6 +150,8 @@ object JSONSerializationPack extends SerializationPack { self =>
     case _                 => throw new JSONException("error.expected.jsobject")
   }
 
+  private[reactivemongo] def bsonValue(json: JsValue): reactivemongo.bson.BSONValue = BSONFormats.toBSON(json).get
+
   private[reactivemongo] def reader[A](f: JsObject => A): Reads[A] = Reads[A] {
     _ match {
       case obj @ JsObject(_) => try {
@@ -163,7 +169,7 @@ object JSONSerializationPack extends SerializationPack { self =>
   /** A builder for serialization simple values (useful for the commands) */
   private object Builder
     extends SerializationPack.Builder[JSONSerializationPack.type] {
-    protected val pack = self
+    protected[reactivemongo] val pack = self
 
     def document(elements: Seq[ElementProducer]): Document =
       Json.obj(elements: _*)
@@ -184,13 +190,47 @@ object JSONSerializationPack extends SerializationPack { self =>
     def double(d: Double): Value = JsNumber(BigDecimal(d.toString))
 
     def string(s: String): Value = JsString(s)
+
+    def timestamp(value: Long): Value = {
+      val time = value >>> 32
+      val ordinal = value.toInt
+
+      Json.obj(
+        f"$$time" -> time,
+        f"$$i" -> ordinal,
+        f"$$timestamp" -> Json.obj(
+          "t" -> time,
+          "i" -> ordinal
+        ))
+    }
+
+    def uuid(id: UUID): Value = {
+      val buf = java.nio.ByteBuffer.wrap(Array.ofDim[Byte](16))
+
+      buf putLong id.getMostSignificantBits
+      buf putLong id.getLeastSignificantBits
+
+      Json.obj(
+        f"$$binary" -> Converters.hex2Str(buf.array),
+        f"$$type" -> Converters.hex2Str(Array(
+          Subtype.UuidSubtype.value.toByte))
+      )
+    }
   }
 
   private object Decoder
     extends SerializationPack.Decoder[JSONSerializationPack.type] {
-    protected val pack = self
+    protected[reactivemongo] val pack = self
+
+    def asDocument(value: JsValue): Option[JsObject] = value.asOpt[JsObject]
 
     def names(document: JsObject): Set[String] = document.keys.toSet
+
+    def array(document: JsObject, name: String): Option[Seq[JsValue]] =
+      (document \ name).asOpt[JsArray].map(_.value)
+
+    def get(document: JsObject, name: String): Option[JsValue] =
+      document.value.get(name)
 
     def booleanLike(document: JsObject, name: String): Option[Boolean] =
       document.value.get(name).collect {
@@ -217,5 +257,17 @@ object JSONSerializationPack extends SerializationPack { self =>
 
     def string(document: JsObject, name: String): Option[String] =
       (document \ name).asOpt[String]
+
+    def uuid(document: JsObject, name: String): Option[UUID] =
+      for {
+        doc <- (document \ name).asOpt[JsObject]
+        _ <- (doc \ f"$$type").asOpt[String].flatMap { str =>
+          Converters.str2Hex(str).headOption.filter { code =>
+            code == Subtype.OldUuidSubtype.value ||
+              code == Subtype.UuidSubtype.value
+          }
+        }
+        bytes <- (doc \ f"$$binary").asOpt[String].map(Converters.str2Hex)
+      } yield UUID.nameUUIDFromBytes(bytes)
   }
 }

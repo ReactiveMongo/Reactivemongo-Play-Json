@@ -318,7 +318,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
       def json: PartialFunction[BSONValue, JsValue] = {
         case ts: BSONTimestamp => Json.obj(
-          f"$$time" -> (ts.value >>> 32), f"$$i" -> ts.value.toInt,
+          f"$$time" -> (ts.value >>> 32),
+          f"$$i" -> ts.value.toInt,
           f"$$timestamp" -> Json.obj(
             "t" -> (ts.value >>> 32), "i" -> ts.value.toInt
           )

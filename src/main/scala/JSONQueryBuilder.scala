@@ -9,6 +9,7 @@ import reactivemongo.play.json.JSONSerializationPack
 
 @SerialVersionUID(1)
 @SuppressWarnings(Array("FinalModifierOnCaseClass"))
+@deprecated("Useless, will be remove", "0.16.0")
 case class JSONQueryBuilder(
     @transient collection: Collection,
     failover: FailoverStrategy,

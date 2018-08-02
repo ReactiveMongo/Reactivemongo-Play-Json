@@ -35,10 +35,10 @@ import reactivemongo.api.{
 import reactivemongo.api.collections.{
   BatchCommands,
   GenericCollection,
-  GenericCollectionProducer,
-  GenericQueryBuilder
+  GenericCollectionProducer
+  //GenericQueryBuilder
 }
-import reactivemongo.api.commands.{ WriteConcern, WriteResult }
+import reactivemongo.api.commands.WriteConcern
 import reactivemongo.util.option
 
 import reactivemongo.play.json.{
@@ -186,8 +186,10 @@ object JSONBatchCommands
   }
 
   implicit object InsertWriter extends pack.Writer[ResolvedInsert] {
-    def writes(cmd: ResolvedInsert): pack.Document =
-      JSONInsertCommand.serialize(cmd)
+    private val underlying = reactivemongo.api.commands.InsertCommand.
+      writer(JSONSerializationPack)(JSONInsertCommand)(None)
+
+    def writes(cmd: ResolvedInsert): pack.Document = underlying(cmd)
   }
 
   object JSONUpdateCommand extends UC[JSONSerializationPack.type] {
@@ -377,53 +379,6 @@ final class JSONCollection(
 
   def withReadPreference(pref: ReadPreference): JSONCollection =
     new JSONCollection(db, name, failoverStrategy, pref)
-
-  def genericQueryBuilder: GenericQueryBuilder[JSONSerializationPack.type] =
-    JSONQueryBuilder(this, failoverStrategy)
-
-  /**
-   * Inserts the document, or updates it if it already exists in the collection.
-   *
-   * @param doc The document to save.
-   */
-  @deprecated("0.11.1", "Use [[update]] with `upsert` set to true")
-  def save(doc: JsObject)(implicit ec: ExecutionContext): Future[WriteResult] =
-    save(doc, WriteConcern.Default)
-
-  /**
-   * Inserts the document, or updates it if it already exists in the collection.
-   *
-   * @param doc The document to save.
-   * @param writeConcern The write concern
-   */
-  @deprecated("0.11.1", "Use [[update]] with `upsert` set to true")
-  def save(doc: pack.Document, writeConcern: WriteConcern)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    import reactivemongo.bson.BSONObjectID
-    (doc \ "_id").toOption match {
-      case None => insert(
-        doc + ("_id" ->
-          BSONFormats.BSONObjectIDFormat.writes(BSONObjectID.generate)),
-        writeConcern
-      )
-
-      case Some(id) =>
-        update(Json.obj("_id" -> id), doc, writeConcern, upsert = true)
-    }
-  }
-
-  /**
-   * Inserts the document, or updates it if it already exists in the collection.
-   *
-   * @param doc The document to save.
-   * @param writeConcern The write concern
-   */
-  @deprecated("0.11.1", "Use [[update]] with `upsert` set to true")
-  def save[T](doc: T, writeConcern: WriteConcern = WriteConcern.Default)(implicit ec: ExecutionContext, writer: Writes[T]): Future[WriteResult] =
-    writer.writes(doc) match {
-      case d @ JsObject(_) => save(d, writeConcern)
-      case _ =>
-        Future.failed[WriteResult](new JSONException("cannot write object"))
-    }
 }
 
 // JSON extension for cursors
