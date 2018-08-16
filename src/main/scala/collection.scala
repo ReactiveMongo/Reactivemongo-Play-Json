@@ -458,7 +458,7 @@ object Helpers {
   @SuppressWarnings(Array("UnusedMethodParameter"))
   def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean, bulkSize: Int, bulkByteSize: Int)(implicit ec: ExecutionContext, wc: WriteConcern): Future[MultiBulkWriteResult] =
     documentProducer(collection, documents).flatMap { producer =>
-      collection.insert[JsObject](ordered, wc).many(producer.map(_.produce))
+      collection.insert(ordered, wc).many(producer.map(_.produce))
     }
 
   /**
@@ -470,7 +470,7 @@ object Helpers {
    */
   def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean = true)(implicit ec: ExecutionContext, wc: WriteConcern = collection.db.connection.options.writeConcern): Future[MultiBulkWriteResult] =
     documentProducer(collection, documents).flatMap { producer =>
-      collection.insert[JsObject](ordered, wc).many(producer.map(_.produce))
+      collection.insert(ordered, wc).many(producer.map(_.produce))
     }
 
   private def documentProducer(collection: JSONCollection, documents: => InputStream)(implicit ec: ExecutionContext): Future[List[collection.ImplicitlyDocumentProducer]] = {

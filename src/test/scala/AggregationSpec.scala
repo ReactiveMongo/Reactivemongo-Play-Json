@@ -39,8 +39,10 @@ class AggregationSpec(implicit ee: ExecutionEnv)
   "Zip codes" should {
     "be inserted" in {
       def insert(data: List[ZipCode]): Future[Unit] = data.headOption match {
-        case Some(zip) => collection.insert(zip).flatMap(_ => insert(data.tail))
-        case _         => Future.successful({})
+        case Some(zip) => collection.insert.one(zip).
+          flatMap(_ => insert(data.tail))
+
+        case _ => Future.successful({})
       }
 
       insert(zipCodes) must beTypedEqualTo({}).await(1, timeout)

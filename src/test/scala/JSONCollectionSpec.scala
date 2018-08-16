@@ -47,8 +47,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
       bsonCollection.find(query).one[JsObject] must beNone.await(1, timeout)
 
       // Add document..
-      collection.insert[User](ordered = true).
-        one(User(username = "John Doe", height = 12)) must beLike[WriteResult] {
+      collection.insert.one(
+        User(username = "John Doe", height = 12)) must beLike[WriteResult] {
           case result => result.ok must beTrue and {
             // Check data in mongodb..
             bsonCollection.find(query).one[BSONDocument].
@@ -99,7 +99,7 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
       val id = BSONObjectID.generate
 
       // Add document..
-      collection.insert[User](ordered = true).one(User(
+      collection.insert.one(User(
         _id = Some(id), username = "Robert Roe", height = 13
       )).map(_.ok) aka "saved" must beTrue.await(1, timeout) and {
         // Check data in mongodb..
