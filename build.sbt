@@ -304,7 +304,7 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
-//Scapegoat.settings
+Scapegoat.settings
 
 lazy val root = (project in file(".")).
   settings(publishSettings ++ Release.settings)

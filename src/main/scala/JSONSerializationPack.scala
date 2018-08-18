@@ -153,15 +153,13 @@ object JSONSerializationPack extends SerializationPack { self =>
   private[reactivemongo] def bsonValue(json: JsValue): reactivemongo.bson.BSONValue = BSONFormats.toBSON(json).get
 
   private[reactivemongo] def reader[A](f: JsObject => A): Reads[A] = Reads[A] {
-    _ match {
-      case obj @ JsObject(_) => try {
-        JsSuccess(f(obj))
-      } catch {
-        case NonFatal(cause) => JsError(cause.getMessage)
-      }
-
-      case _ => JsError("error.expected.jsobject")
+    case obj @ JsObject(_) => try {
+      JsSuccess(f(obj))
+    } catch {
+      case NonFatal(cause) => JsError(cause.getMessage)
     }
+
+    case _ => JsError("error.expected.jsobject")
   }
 
   // ---

@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 set -e
 
@@ -29,6 +29,19 @@ fi
 TEST_OPTS="exclude mongo2"
 
 TEST_CMD=";findbugs ;mimaReportBinaryIssues"
+
+if [ "v$TRAVIS_SCALA_VERSION" = "v2.12.6" ]; then
+    TEST_CMD="$TEST_CMD ;scapegoat"
+else
+    FS="build.sbt project/plugins.sbt"
+
+    for F in $FS; do
+        grep -vi 'scapegoat' "$F" > "$F.tmp" && mv "$F.tmp" "$F"
+    done
+
+    rm -f project/Scapegoat.scala
+fi
+
 TEST_CMD="$TEST_CMD; testQuick * -- $TEST_OPTS"
 
 sbt ++$TRAVIS_SCALA_VERSION "$TEST_CMD"
