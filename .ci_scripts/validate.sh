@@ -33,13 +33,7 @@ TEST_CMD=";findbugs ;mimaReportBinaryIssues"
 if [ "v$TRAVIS_SCALA_VERSION" = "v2.12.6" ]; then
     TEST_CMD="$TEST_CMD ;scapegoat"
 else
-    FS="build.sbt project/plugins.sbt"
-
-    for F in $FS; do
-        grep -vi 'scapegoat' "$F" > "$F.tmp" && mv "$F.tmp" "$F"
-    done
-
-    rm -f project/Scapegoat.scala
+    "$SCRIPT_DIR/disable-scapegoat.sh"
 fi
 
 TEST_CMD="$TEST_CMD; testQuick * -- $TEST_OPTS"

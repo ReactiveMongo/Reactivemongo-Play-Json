@@ -29,6 +29,11 @@ export PUBLISH_REPO_ID="oss.sonatype.org"
 export PUBLISH_USER="$SONATYPE_USER"
 export PUBLISH_PASS="$SONATYPE_PASS"
 
+if [ "v$TRAVIS_SCALA_VERSION" = "v2.12.6" ]; then
+    cd "$SCRIPT_DIR/.."
+    "$SCRIPT_DIR/disable-scapegoat.sh"
+fi
+
 if [ "x$CROSS_SCALA_VERSIONS" = "xyes" ];then
   sbt ";++${SCALA_VERSION} ;+publish"
 else
