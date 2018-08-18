@@ -2,11 +2,10 @@ import scala.util.{ Failure, Try }
 
 import scala.concurrent.Await
 
-import reactivemongo.api.{ Cursor, ReadConcern }
+import reactivemongo.api.{ Cursor, ReadConcern, WriteConcern }
 import reactivemongo.api.commands.{
   CommandError,
   UnitBox,
-  WriteConcern,
   WriteResult
 }
 
@@ -44,15 +43,17 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     "add object if there does not exist in database" in {
       // Check current document does not exist
       val query = BSONDocument("username" -> BSONString("John Doe"))
-      bsonCollection.find(query).one[JsObject] must beNone.await(1, timeout)
+
+      bsonCollection.find(query, Option.empty[JsObject]).
+        one[JsObject] must beNone.await(1, timeout)
 
       // Add document..
       collection.insert.one(
         User(username = "John Doe", height = 12)) must beLike[WriteResult] {
           case result => result.ok must beTrue and {
             // Check data in mongodb..
-            bsonCollection.find(query).one[BSONDocument].
-              aka("result") must beSome[BSONDocument].which { d =>
+            bsonCollection.find(query, Option.empty[BSONDocument]).
+              one[BSONDocument] must beSome[BSONDocument].which { d =>
                 d.get("_id") must beSome and (
                   d.get("username") must beSome(BSONString("John Doe"))
                 )
@@ -64,7 +65,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     "update object there already exists in database" in {
       // Find saved object
       val fetched1 = Await.result(collection.find(
-        Json.obj("username" -> "John Doe")).one[User], timeout)
+        Json.obj("username" -> "John Doe"), Option.empty[JsObject]).
+        one[User], timeout)
 
       fetched1 must beSome[User].which { u =>
         u._id.isDefined must beTrue and (u.username must_=== "John Doe")
@@ -81,10 +83,16 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
       result.ok must beTrue
 
       // Check data in mongodb..
-      val fetched2 = Await.result(bsonCollection.find(BSONDocument("username" -> BSONString("John Doe"))).one[BSONDocument], timeout)
+      val fetched2 = Await.result(bsonCollection.find(
+        BSONDocument("username" -> BSONString("John Doe")),
+        Option.empty[BSONDocument]).one[BSONDocument], timeout)
+
       fetched2 must beNone
 
-      val fetched3 = Await.result(bsonCollection.find(BSONDocument("username" -> BSONString("Jane Doe"))).one[BSONDocument], timeout)
+      val fetched3 = Await.result(bsonCollection.find(
+        BSONDocument("username" -> BSONString("Jane Doe")),
+        Option.empty[BSONDocument]).one[BSONDocument], timeout)
+
       fetched3 must beSome[BSONDocument].which { d =>
         d.get("_id") must beSome(fetched1.get._id.get) and (
           d.get("username") must beSome(BSONString("Jane Doe"))
@@ -103,8 +111,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
         _id = Some(id), username = "Robert Roe", height = 13
       )).map(_.ok) aka "saved" must beTrue.await(1, timeout) and {
         // Check data in mongodb..
-        bsonCollection.find(query).one[BSONDocument].
-          aka("result") must beSome[BSONDocument].which { d =>
+        bsonCollection.find(query, Option.empty[BSONDocument]).
+          one[BSONDocument] must beSome[BSONDocument].which { d =>
             d.get("_id") must beSome(id) and (
               d.get("username") must beSome(BSONString("Robert Roe"))
             )
@@ -211,7 +219,7 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
   "JSON collection" should {
     @inline def cursorAll: Cursor[JsObject] =
       collection.withReadPreference(ReadPreference.secondaryPreferred).
-        find(Json.obj()).cursor[JsObject]()
+        find(Json.obj(), Option.empty[JsObject]).cursor[JsObject]()
 
     "use read preference from the collection" in {
       import scala.language.reflectiveCalls
@@ -221,8 +229,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     }
 
     "find with empty criteria document" in {
-      collection.find(Json.obj()).sort(Json.obj("updated" -> -1)).
-        cursor[JsObject]().collect[List](
+      collection.find(Json.obj(), Option.empty[JsObject]).
+        sort(Json.obj("updated" -> -1)).cursor[JsObject]().collect[List](
           Int.MaxValue, Cursor.FailOnError[List[JsObject]]()).
           aka("find with empty document") must not(throwA[Throwable]).
           await(1, timeout)
@@ -231,7 +239,7 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     "find with selector and projection" in {
       collection.find(
         selector = Json.obj("username" -> "Jane Doe"),
-        projection = Json.obj("_id" -> 0)
+        projection = Option(Json.obj("_id" -> 0))
       ).cursor[JsObject]().headOption must beSome[JsObject].which { json =>
           Json.stringify(json) must beTypedEqualTo(
             "{\"username\":\"Jane Doe\",\"height\":12}"
@@ -259,7 +267,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     "return result as a JSON array" in {
       import reactivemongo.play.json.collection.JsCursor._
 
-      collection.find(Json.obj()).cursor[JsObject]().jsArray().
+      collection.find(Json.obj(), Option.empty[JsObject]).
+        cursor[JsObject]().jsArray().
         map(_.value.map { js => (js \ "username").as[String] }).
         aka("extracted JSON array") must beTypedEqualTo(Seq(
           "Jane Doe", "Robert Roe", "James Joyce"
@@ -278,8 +287,8 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
       Helpers.bulkInsert(quiz, input).map(_.totalN).
         aka("inserted") must beTypedEqualTo(6).await(0, timeout) and {
-          quiz.find(Json.obj()).cursor[JsObject]().collect[List](
-            Int.MaxValue, Cursor.FailOnError[List[JsObject]]()).
+          quiz.find(Json.obj(), Option.empty[JsObject]).cursor[JsObject]().
+            collect[List](Int.MaxValue, Cursor.FailOnError[List[JsObject]]()).
             map(_.map(Json.stringify).sorted) must beTypedEqualTo(expected).
             await(0, timeout)
         }

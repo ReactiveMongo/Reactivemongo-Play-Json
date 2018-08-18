@@ -30,9 +30,6 @@ object Compiler {
         "-Yopt:_"
       )
     },
-    scalacOptions in Test ~= {
-      _.filterNot(_ == "-Xfatal-warnings")
-    },
     scalacOptions in (Compile, doc) := (scalacOptions in Test).value,
     scalacOptions in (Compile, console) ~= {
       _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
@@ -44,9 +41,6 @@ object Compiler {
       "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
       /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
       Opts.doc.title("ReactiveMongo Play JSON API") ++
-      Opts.doc.version(Release.major.value),
-    resolvers ++= Seq(
-      Resolver.sonatypeRepo("snapshots"),
-      "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
+      Opts.doc.version(Release.major.value)
   )
 }

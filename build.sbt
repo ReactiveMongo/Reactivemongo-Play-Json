@@ -9,8 +9,6 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-scalaVersion in ThisBuild := "2.12.6"
-
 version ~= { ver =>
   sys.env.get("RELEASE_SUFFIX") match {
     case Some(suffix) => ver.span(_ != '-') match {
@@ -20,59 +18,7 @@ version ~= { ver =>
   }
 }
 
-crossScalaVersions in ThisBuild := Seq("2.11.12", scalaVersion.value)
-
-crossVersion in ThisBuild := CrossVersion.binary
-
-scalacOptions ++= Seq(
-  "-encoding", "UTF-8", "-target:jvm-1.8",
-  "-unchecked",
-  "-deprecation",
-  "-feature",
-  //"-Xfatal-warnings",
-  "-Xlint",
-  "-Ywarn-numeric-widen",
-  "-Ywarn-dead-code",
-  "-Ywarn-value-discard",
-  "-Ywarn-infer-any",
-  "-Ywarn-unused",
-  "-Ywarn-unused-import",
-  "-g:vars"
-)
-
-scalacOptions in Compile ++= {
-  if (!scalaVersion.value.startsWith("2.11.")) Nil
-  else Seq(
-    "-Yconst-opt",
-    "-Yclosure-elim",
-    "-Ydead-code",
-    "-Yopt:_"
-  )
-}
-
-scalacOptions in Test ~= {
-  _.filterNot(_ == "-Xfatal-warnings")
-}
-
-scalacOptions in (Compile, doc) := (scalacOptions in Test).value
-
-scalacOptions in (Compile, console) ~= {
-  _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
-}
-
-scalacOptions in (Test, console) ~= {
-  _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
-}
-
-scalacOptions in (Compile, doc) ++= Seq(
-  "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
-  /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
-  Opts.doc.title("ReactiveMongo Play JSON API") ++
-  Opts.doc.version(Release.major.value)
-
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/")
+Compiler.settings
 
 val playLower = "2.5.0"
 val playUpper = "2.6.2"
@@ -93,9 +39,25 @@ unmanagedSourceDirectories in Compile += {
   (sourceDirectory in Compile).value / playDir.value
 }
 
-libraryDependencies ++= Seq(
+resolvers ++= Seq(
+  Resolver.sonatypeRepo("snapshots"),
+  "Typesafe repository releases".at(
+    "http://repo.typesafe.com/typesafe/releases/"),
+  "Tatami Snapshots".at(
+    "https://raw.github.com/cchantep/tatami/master/snapshots")
+)
+
+libraryDependencies ++= {
+  val silencerVer = "1.2-SNAPSHOT"
+
+  def silencer = Seq(
+    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVer),
+    "com.github.ghik" %% "silencer-lib" % silencerVer % Provided)
+
+  Seq(
   "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % Provided cross CrossVersion.binary,
-  "com.typesafe.play" %% "play-json" % playVer.value % Provided cross CrossVersion.binary)
+    "com.typesafe.play" %% "play-json" % playVer.value % Provided cross CrossVersion.binary) ++ silencer
+}
 
 // Test
 unmanagedSourceDirectories in Test += {
@@ -113,7 +75,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "4.2.0",
+  "org.specs2" %% "specs2-core" % "4.3.2",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI

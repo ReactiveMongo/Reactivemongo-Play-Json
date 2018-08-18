@@ -55,6 +55,7 @@ object JSONAggregationImplicits {
   import reactivemongo.core.protocol.MongoWireVersion
   import JSONAggregationFramework.{ Aggregate, AggregationResult }
 
+  @deprecated("Use `reactivemongo.api.collections.Aggregator`", "0.17.0")
   implicit object AggregateWriter
     extends OWrites[ResolvedCollectionCommand[Aggregate]] {
     def writes(agg: ResolvedCollectionCommand[Aggregate]): JsObject = {
@@ -84,6 +85,7 @@ object JSONAggregationImplicits {
     }
   }
 
+  @deprecated("Use `reactivemongo.api.collections.Aggregator`", "0.17.0")
   implicit object AggregationResultReader
     extends DealingWithGenericCommandErrorsReader[AggregationResult] {
 

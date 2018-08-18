@@ -17,6 +17,8 @@ package reactivemongo.play.json.collection
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+import com.github.ghik.silencer.silent
+
 import play.api.libs.json.{
   Json,
   JsArray,
@@ -56,6 +58,7 @@ object `package` {
   }
 }
 
+@deprecated("BatchCommands will be removed from the API", "0.17.0")
 object JSONBatchCommands
   extends BatchCommands[JSONSerializationPack.type] { commands =>
 
@@ -375,6 +378,8 @@ final class JSONCollection(
     this(db, name, failoverStrategy, db.defaultReadPreference)
 
   val pack = JSONSerializationPack
+
+  @silent
   val BatchCommands = JSONBatchCommands
 
   def withReadPreference(pref: ReadPreference): JSONCollection =
@@ -468,7 +473,7 @@ object Helpers {
    * @param ordered true if to insert the document in order
    * @param wc the write concern
    */
-  def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean = true)(implicit ec: ExecutionContext, wc: WriteConcern = collection.db.connection.options.writeConcern): Future[MultiBulkWriteResult] =
+  def bulkInsert(collection: JSONCollection, documents: => InputStream, ordered: Boolean = true)(implicit ec: ExecutionContext, @silent wc: WriteConcern = collection.db.connection.options.writeConcern): Future[MultiBulkWriteResult] =
     documentProducer(collection, documents).flatMap { producer =>
       collection.insert(ordered, wc).many(producer.map(_.produce))
     }

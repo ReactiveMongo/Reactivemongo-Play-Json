@@ -23,11 +23,13 @@ import reactivemongo.api.commands.{
 }
 import reactivemongo.play.json.JSONSerializationPack
 
+@deprecated("Will be internal/private", "0.17.0")
 object JSONFindAndModifyCommand
   extends FindAndModifyCommand[JSONSerializationPack.type] {
   val pack: JSONSerializationPack.type = JSONSerializationPack
 }
 
+@deprecated("Will be internal/private", "0.17.0")
 object JSONFindAndModifyImplicits {
   import JSONFindAndModifyCommand._
 

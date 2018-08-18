@@ -4,7 +4,7 @@ import play.api.libs.json.{ Json, JsObject }, Json.{ obj => document, toJson }
 
 import org.specs2.concurrent.ExecutionEnv
 
-import reactivemongo.api.Cursor
+import reactivemongo.api.{ Cursor, ReadConcern }
 
 import reactivemongo.play.json._, collection._
 
@@ -182,7 +182,9 @@ class AggregationSpec(implicit ee: ExecutionEnv)
     }
 
     "return distinct states" in {
-      collection.distinct[String, Set]("state").
+      collection.distinct[String, Set](
+        key = "state", query = None,
+        readConcern = ReadConcern.Local, collation = None).
         aka("states") must beTypedEqualTo(Set("NY", "FR", "JP")).
         await(1, timeout)
     }
