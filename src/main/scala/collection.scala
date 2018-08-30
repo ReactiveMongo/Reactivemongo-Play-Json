@@ -433,7 +433,8 @@ object JsCursor {
     type ProducedCursor = JsCursor[T]
 
     // Returns a cursor with JSON operations.
-    def produce(base: Cursor[T]): JsCursor[T] = new JsCursorImpl[T](base)
+    def produce(base: Cursor.WithOps[T]): JsCursor[T] =
+      new JsCursorImpl[T](base)
   }
 
   /** Provides flattener for JSON cursor. */

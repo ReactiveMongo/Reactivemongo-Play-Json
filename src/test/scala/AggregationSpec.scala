@@ -183,7 +183,7 @@ class AggregationSpec(implicit ee: ExecutionEnv)
 
     "return distinct states" in {
       collection.distinct[String, Set](
-        key = "state", query = None,
+        key = "state", selector = None,
         readConcern = ReadConcern.Local, collation = None).
         aka("states") must beTypedEqualTo(Set("NY", "FR", "JP")).
         await(1, timeout)

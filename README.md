@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
 
 The documentation is [available online](http://reactivemongo.org/releases/0.1x/documentation/json/overview.html).
 
-> More [examples[src/test/scala/JSONCollectionSpec.scala]
+> More [examples](src/test/scala/JSONCollectionSpec.scala)
 
 ## Build manually
 
