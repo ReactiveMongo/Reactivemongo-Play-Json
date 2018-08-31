@@ -39,3 +39,15 @@ if [ "x$CROSS_SCALA_VERSIONS" = "xyes" ];then
 else
   sbt ";++${SCALA_VERSION} ;publish"
 fi
+
+# Dependent builds
+DEPENDENT_REPOS="play:293753"
+
+for REPO in $DEPENDENT_REPOS; do
+  REPO_NAME=`echo "$REPO" | cut -d ':' -f 1`
+  REPO_ID=`echo "$REPO" | cut -d ':' -f 2`
+
+  echo "INFO: Trigger build for repository $REPO_NAME ($REPO_ID)"
+
+  "$SCRIPT_DIR/trigger-travis-build.sh" "$REPO_ID"
+done
