@@ -3,7 +3,7 @@ import sbt._
 
 object Play {
   val playLower = "2.5.0"
-  val playUpper = "2.6.2"
+  val playUpper = "2.7.0"
 
   val playVer = Def.setting[String] {
     sys.env.get("PLAY_VERSION").getOrElse {
@@ -13,7 +13,7 @@ object Play {
   }
 
   val playDir = Def.setting[String] {
-    if (playVer.value startsWith "2.6") "play-2.6"
-    else "play-upto2.5"
+    if (playVer.value startsWith "2.5") "play-upto2.5"
+    else "play-2.6+"
   }
 }

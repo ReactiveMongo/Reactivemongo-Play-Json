@@ -17,4 +17,3 @@ addSbtPlugin("com.github.sbt" % "sbt-findbugs" % "2.0.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.9")
 
-addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "1.0.7")

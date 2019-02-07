@@ -21,7 +21,7 @@ version ~= { ver =>
 Compiler.settings
 
 val playLower = "2.5.0"
-val playUpper = "2.6.2"
+val playUpper = "2.7.0"
 
 val playVer = Def.setting[String] {
   sys.env.get("PLAY_VERSION").getOrElse {
@@ -31,13 +31,19 @@ val playVer = Def.setting[String] {
 }
 
 val playDir = Def.setting[String] {
-  if (playVer.value startsWith "2.6") "play-2.6"
-  else "play-upto2.5"
+  if (playVer.value startsWith "2.5") "play-upto2.5"
+  else "play-2.6+"
 }
 
 unmanagedSourceDirectories in Compile += {
   (sourceDirectory in Compile).value / playDir.value
 }
+
+resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
+
+resolvers += "Sonatype Staging" at "https://oss.sonatype.org/content/repositories/staging/"
+
+resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
@@ -305,7 +311,6 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value.
   setPreference(SpacesAroundMultiImports, true).
   setPreference(SpacesWithinPatternBinders, true)
 
-Scapegoat.settings
 
 lazy val root = (project in file(".")).
   settings(publishSettings ++ Release.settings)
