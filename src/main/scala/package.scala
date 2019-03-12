@@ -602,7 +602,10 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     case JsNumber(n)                   => JsSuccess(BSONLong(n.toLong))
   }
 
-  def toBSON(json: JsValue): JsResult[BSONValue] = readAsBSONValue(json)
+  private val defaultRead: JsValue => JsResult[BSONValue] =
+    readAsBSONValue(_: JsValue)
+
+  def toBSON(json: JsValue): JsResult[BSONValue] = defaultRead(json)
 
   @SuppressWarnings(Array("MaxParameters"))
   def readAsBSONValue(json: JsValue)(
@@ -646,7 +649,9 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       orElse(undef.partialReads).
       lift(json).getOrElse(JsError(s"unhandled json value: $json"))
 
-  def toJSON(bson: BSONValue): JsValue = writeAsJsValue(bson)
+  private val defaultWrite: BSONValue => JsValue = writeAsJsValue(_: BSONValue)
+
+  def toJSON(bson: BSONValue): JsValue = defaultWrite(bson)
 
   @SuppressWarnings(Array("MaxParameters"))
   def writeAsJsValue(bson: BSONValue)(

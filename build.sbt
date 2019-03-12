@@ -39,12 +39,6 @@ unmanagedSourceDirectories in Compile += {
   (sourceDirectory in Compile).value / playDir.value
 }
 
-resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-
-resolvers += "Sonatype Staging" at "https://oss.sonatype.org/content/repositories/staging/"
-
-resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
-
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   "Typesafe repository releases".at(
@@ -163,6 +157,10 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
     playFilters ++ (Seq("Writes", "Reads").map { m =>
       ProblemFilters.exclude[InheritedNewAbstractMethodProblem](s"reactivemongo.play.json.BSONFormats#PartialFormat.reactivemongo$$play$$json$$BSONFormats$$Partial${m}$$$$$$outer")
     }) ++ Seq(
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultRead"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultWrite_="),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultRead_="),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultWrite"),
       ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONTimestampFormat$TimeValue$"),
