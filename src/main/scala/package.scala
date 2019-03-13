@@ -602,13 +602,15 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     case JsNumber(n)                   => JsSuccess(BSONLong(n.toLong))
   }
 
-  private val defaultRead: JsValue => JsResult[BSONValue] =
-    readAsBSONValue(_: JsValue)
+  private val defaultRead: JsValue => JsResult[BSONValue] = {
+    val reads = combinedReads
+    json => reads.lift(json).getOrElse(JsError(s"unhandled json value: $json"))
+  }
 
   def toBSON(json: JsValue): JsResult[BSONValue] = defaultRead(json)
 
   @SuppressWarnings(Array("MaxParameters"))
-  def readAsBSONValue(json: JsValue)(
+  def combinedReads(
     implicit
     string: PartialReads[BSONString],
     objectID: PartialReads[BSONObjectID],
@@ -628,7 +630,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     array: PartialReads[BSONArray],
     doc: PartialReads[BSONDocument],
     undef: PartialReads[BSONUndefined.type]
-  ): JsResult[BSONValue] =
+  ): PartialFunction[JsValue, JsResult[BSONValue]] =
     string.partialReads.
       orElse(objectID.partialReads).
       orElse(javascript.partialReads).
@@ -646,15 +648,19 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       orElse(symbol.partialReads).
       orElse(array.partialReads).
       orElse(doc.partialReads).
-      orElse(undef.partialReads).
-      lift(json).getOrElse(JsError(s"unhandled json value: $json"))
+      orElse(undef.partialReads)
 
-  private val defaultWrite: BSONValue => JsValue = writeAsJsValue(_: BSONValue)
+  private val defaultWrite: BSONValue => JsValue = {
+    val writes = combinedWrites
+    bson => writes.lift(bson).getOrElse {
+      throw new JSONException(s"Unhandled json value: $bson")
+    }
+  }
 
   def toJSON(bson: BSONValue): JsValue = defaultWrite(bson)
 
   @SuppressWarnings(Array("MaxParameters"))
-  def writeAsJsValue(bson: BSONValue)(
+  def combinedWrites(
     implicit
     string: PartialWrites[BSONString],
     objectID: PartialWrites[BSONObjectID],
@@ -674,7 +680,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     array: PartialWrites[BSONArray],
     doc: PartialWrites[BSONDocument],
     undef: PartialWrites[BSONUndefined.type]
-  ): JsValue = string.partialWrites.
+  ): PartialFunction[BSONValue, JsValue] = string.partialWrites.
     orElse(objectID.partialWrites).
     orElse(javascript.partialWrites).
     orElse(dateTime.partialWrites).
@@ -691,10 +697,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     orElse(symbol.partialWrites).
     orElse(array.partialWrites).
     orElse(doc.partialWrites).
-    orElse(undef.partialWrites).
-    lift(bson).getOrElse(
-      throw new JSONException(s"Unhandled json value: $bson")
-    )
+    orElse(undef.partialWrites)
 }
 
 object Writers {
