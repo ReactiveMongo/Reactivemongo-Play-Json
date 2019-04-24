@@ -3,7 +3,7 @@ import sbt._
 
 object Play {
   val playLower = "2.5.0"
-  val playUpper = "2.7.0"
+  val playUpper = "2.7.1"
 
   val playVer = Def.setting[String] {
     sys.env.get("PLAY_VERSION").getOrElse {
