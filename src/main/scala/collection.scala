@@ -22,9 +22,10 @@ import com.github.ghik.silencer.silent
 import play.api.libs.json.{
   Json,
   JsArray,
-  JsBoolean,
   JsObject,
   JsPath,
+  OWrites,
+  Reads,
   Writes
 }
 
@@ -38,16 +39,10 @@ import reactivemongo.api.collections.{
   BatchCommands,
   GenericCollection,
   GenericCollectionProducer
-  //GenericQueryBuilder
 }
 import reactivemongo.api.commands.WriteConcern
-import reactivemongo.util.option
 
-import reactivemongo.play.json.{
-  BSONFormats,
-  JSONException,
-  JSONSerializationPack
-}
+import reactivemongo.play.json.{ JSONException, JSONSerializationPack }
 
 /**
  * A Collection that interacts with the Play JSON library, using `Reads` and `Writes`.
@@ -64,30 +59,19 @@ object JSONBatchCommands
 
   import play.api.libs.json.{
     JsError,
-    JsNumber,
     JsValue,
-    JsString,
     JsResult,
     JsSuccess
   }
-  import reactivemongo.bson.BSONValue
   import reactivemongo.api.commands.{
     CountCommand => CC,
-    DefaultWriteResult,
     DeleteCommand => DC,
-    GetLastError => GLE,
     InsertCommand => IC,
     DistinctCommand => DistC,
-    LastError,
     ResolvedCollectionCommand,
-    UpdateCommand => UC,
-    Upserted,
-    UpdateWriteResult,
-    WriteError,
-    WriteConcernError
+    UpdateCommand => UC
   }
   import reactivemongo.core.protocol.MongoWireVersion
-  import reactivemongo.play.json.readOpt
   import reactivemongo.play.json.commands.CommonImplicits
 
   val pack = JSONSerializationPack
@@ -135,207 +119,38 @@ object JSONBatchCommands
       }
   }
 
-  implicit object HintWriter extends Writes[CountCommand.Hint] {
-    import CountCommand.{ HintString, HintDocument }
+  implicit def CountWriter: OWrites[ResolvedCollectionCommand[CountCommand.Count]] = sys.error("Deprecated/unused")
 
-    def writes(hint: CountCommand.Hint): JsValue = hint match {
-      case HintString(s)     => JsString(s)
-      case HintDocument(obj) => obj
-    }
-  }
-
-  implicit object CountWriter
-    extends pack.Writer[ResolvedCollectionCommand[CountCommand.Count]] {
-
-    def writes(count: ResolvedCollectionCommand[CountCommand.Count]): pack.Document = {
-      val fields = Seq[Option[(String, Json.JsValueWrapper)]](
-        Some("count" -> count.collection),
-        count.command.query.map("query" -> _),
-        option(count.command.limit != 0, count.command.limit).map("limit" -> _),
-        option(count.command.skip != 0, count.command.skip).map("skip" -> _),
-        count.command.hint.map("hint" -> _)
-      ).flatten
-
-      Json.obj(fields: _*)
-    }
-  }
-
-  implicit object CountResultReader
-    extends pack.Reader[CountCommand.CountResult] {
-    def reads(js: JsValue): JsResult[CountCommand.CountResult] =
-      (js \ "n").validate[Int].map(CountCommand.CountResult(_))
-  }
+  implicit def CountResultReader: Reads[CountCommand.CountResult] = sys.error("Deprecated/unused")
 
   object JSONInsertCommand extends IC[JSONSerializationPack.type] {
     val pack = commands.pack
   }
   val InsertCommand = JSONInsertCommand
+
   type ResolvedInsert = ResolvedCollectionCommand[InsertCommand.Insert]
 
-  implicit object WriteConcernWriter extends pack.Writer[WriteConcern] {
-    def writes(wc: WriteConcern): pack.Document = {
-      val obj = Json.obj(
-        "w" -> ((wc.w match {
-          case GLE.Majority                  => JsString("majority")
-          case GLE.TagSet(tagSet)            => JsString(tagSet)
-          case GLE.WaitForAknowledgments(n)  => JsNumber(n)
-          case GLE.WaitForAcknowledgments(n) => JsNumber(n)
-        }): JsValue),
-        "wtimeout" -> wc.wtimeout
-      )
-
-      if (!wc.j) obj else obj + ("j" -> JsBoolean(true))
-    }
-  }
-
-  implicit object InsertWriter extends pack.Writer[ResolvedInsert] {
-    private val underlying = reactivemongo.api.commands.InsertCommand.
-      writer(JSONSerializationPack)(JSONInsertCommand)(None)
-
-    def writes(cmd: ResolvedInsert): pack.Document = underlying(cmd)
-  }
+  implicit def InsertWriter: OWrites[ResolvedInsert] = sys.error("Deprecated/unused")
 
   object JSONUpdateCommand extends UC[JSONSerializationPack.type] {
     val pack = commands.pack
   }
-
   val UpdateCommand = JSONUpdateCommand
+
   type ResolvedUpdate = ResolvedCollectionCommand[UpdateCommand.Update]
 
-  implicit object UpdateElementWriter
-    extends pack.Writer[UpdateCommand.UpdateElement] {
+  implicit def UpdateWriter: OWrites[ResolvedUpdate] = sys.error("Deprecated/unused")
 
-    def writes(element: UpdateCommand.UpdateElement): pack.Document = Json.obj(
-      "q" -> element.q,
-      "u" -> element.u,
-      "upsert" -> element.upsert,
-      "multi" -> element.multi
-    )
-  }
-
-  implicit object UpdateWriter extends pack.Writer[ResolvedUpdate] {
-    def writes(cmd: ResolvedUpdate): pack.Document = Json.obj(
-      "update" -> cmd.collection,
-      "updates" -> Json.toJson(cmd.command.updates),
-      "ordered" -> cmd.command.ordered,
-      "writeConcern" -> cmd.command.writeConcern
-    )
-  }
-
-  implicit object UpsertedReader extends pack.Reader[Upserted] {
-    def reads(js: JsValue): JsResult[Upserted] = for {
-      ix <- (js \ "index").validate[Int]
-      id <- (js \ "_id").validate[JsValue].flatMap(BSONFormats.toBSON)
-    } yield Upserted(index = ix, _id = id)
-  }
-
-  implicit object WriteErrorReader extends pack.Reader[WriteError] {
-    def reads(js: JsValue): JsResult[WriteError] = for {
-      id <- (js \ "index").validate[Int]
-      co <- (js \ "code").validate[Int]
-      em <- (js \ "errmsg").validate[String]
-    } yield WriteError(index = id, code = co, errmsg = em)
-  }
-
-  implicit object WriteConcernErrorReader
-    extends pack.Reader[WriteConcernError] {
-    def reads(js: JsValue): JsResult[WriteConcernError] = for {
-      co <- (js \ "code").validate[Int]
-      em <- (js \ "errmsg").validate[String]
-    } yield WriteConcernError(code = co, errmsg = em)
-  }
-
-  implicit object UpdateReader extends pack.Reader[UpdateCommand.UpdateResult] {
-    def reads(js: JsValue): JsResult[UpdateCommand.UpdateResult] = for {
-      ok <- readOpt[Int](js \ "ok")
-      n <- readOpt[Int](js \ "n")
-      mo <- readOpt[Int](js \ "nModified")
-      up <- readOpt[Seq[Upserted]](js \ "upserted")
-      we <- readOpt[Seq[WriteError]](js \ "writeErrors")
-      ce <- readOpt[WriteConcernError](js \ "writeConcernError")
-      co <- readOpt[Int](js \ "code") //FIXME There is no corresponding official docs.
-      em <- readOpt[String](js \ "errmsg") //FIXME There is no corresponding official docs.
-    } yield UpdateWriteResult(
-      ok = ok.exists(_ != 0),
-      n = n.getOrElse(0),
-      nModified = mo.getOrElse(0),
-      upserted = up.getOrElse(Seq.empty[Upserted]),
-      writeErrors = we.getOrElse(Seq.empty[WriteError]),
-      writeConcernError = ce,
-      code = co,
-      errmsg = em
-    )
-  }
+  implicit def UpdateReader: Reads[UpdateCommand.UpdateResult] = sys.error("Deprecated/unused")
 
   object JSONDeleteCommand extends DC[JSONSerializationPack.type] {
     val pack = commands.pack
   }
   val DeleteCommand = JSONDeleteCommand
+
   type ResolvedDelete = ResolvedCollectionCommand[DeleteCommand.Delete]
 
-  implicit object DeleteElementWriter
-    extends pack.Writer[DeleteCommand.DeleteElement] {
-    def writes(e: DeleteCommand.DeleteElement): pack.Document = Json.obj(
-      "q" -> e.q, "limit" -> e.limit
-    )
-  }
-
-  implicit object DeleteWriter extends pack.Writer[ResolvedDelete] {
-    def writes(cmd: ResolvedDelete): pack.Document = Json.obj(
-      "delete" -> cmd.collection,
-      "deletes" -> Json.toJson(cmd.command.deletes),
-      "ordered" -> cmd.command.ordered,
-      "writeConcern" -> cmd.command.writeConcern
-    )
-  }
-
-  implicit object DefaultWriteResultReader
-    extends pack.Reader[DefaultWriteResult] {
-    def reads(js: JsValue): JsResult[DefaultWriteResult] = for {
-      ok <- readOpt[Int](js \ "ok")
-      n <- readOpt[Int](js \ "n")
-      we <- readOpt[Seq[WriteError]](js \ "writeErrors")
-      ce <- readOpt[WriteConcernError](js \ "writeConcernError")
-      co <- readOpt[Int](js \ "code") //FIXME There is no corresponding official docs.
-      em <- readOpt[String](js \ "errmsg") //FIXME There is no corresponding official docs.
-    } yield DefaultWriteResult(
-      ok = ok.exists(_ != 0),
-      n = n.getOrElse(0),
-      writeErrors = we.getOrElse(Seq.empty[WriteError]),
-      writeConcernError = ce,
-      code = co,
-      errmsg = em
-    )
-  }
-
-  implicit object LastErrorReader extends pack.Reader[LastError] {
-    def reads(js: JsValue): JsResult[LastError] = for {
-      ok <- readOpt[Int](js \ "ok")
-      er <- readOpt[String](js \ "err")
-      co <- readOpt[Int](js \ "code")
-      lo <- readOpt[Long](js \ "lastOp")
-      n <- readOpt[Int](js \ "n")
-      ss <- readOpt[String](js \ "singleShard")
-      ux <- readOpt[Boolean](js \ "updatedExisting")
-      ue <- readOpt[JsValue](js \ "upserted").flatMap(
-        _.fold[JsResult[Option[BSONValue]]](
-          JsSuccess(None)
-        )(BSONFormats.toBSON(_).map(Some(_)))
-      )
-      wn <- (js \ "wnote").get match {
-        case JsString("majority") => JsSuccess(Some(GLE.Majority))
-        case JsString(tagSet)     => JsSuccess(Some(GLE.TagSet(tagSet)))
-        case JsNumber(acks) => JsSuccess(
-          Some(GLE.WaitForAcknowledgments(acks.toInt))
-        )
-        case _ => JsSuccess(Option.empty[GLE.W])
-      }
-      wt <- readOpt[Boolean](js \ "wtimeout")
-      we <- readOpt[Int](js \ "waited")
-      wm <- readOpt[Int](js \ "wtime")
-    } yield LastError(ok.exists(_ != 0), er, co, lo, n.getOrElse(0),
-      ss, ux.getOrElse(false), ue, wn, wt.getOrElse(false), we, wm)
-  }
+  implicit def DeleteWriter: OWrites[ResolvedDelete] = sys.error("Deprecated/unused")
 
   import reactivemongo.play.json.commands.{
     JSONFindAndModifyCommand,
@@ -447,7 +262,7 @@ object JsCursor {
 /** Some JSON helpers. */
 object Helpers {
   import java.io.InputStream
-  import play.api.libs.json.{ JsError, JsSuccess, OWrites }
+  import play.api.libs.json.{ JsError, JsSuccess }
   import reactivemongo.api.commands.MultiBulkWriteResult
 
   implicit val idWrites = OWrites[JsObject](identity[JsObject])

@@ -157,6 +157,29 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
     playFilters ++ (Seq("Writes", "Reads").map { m =>
       ProblemFilters.exclude[InheritedNewAbstractMethodProblem](s"reactivemongo.play.json.BSONFormats#PartialFormat.reactivemongo$$play$$json$$BSONFormats$$Partial${m}$$$$$$outer")
     }) ++ Seq(
+      // Deprecated BatchCommands
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$DeleteElementWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$LastErrorReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$UpdateReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$InsertWriter$"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.DeleteWriter"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.UpdateWriter"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.CountWriter"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.UpdateReader"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.CountResultReader"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONBatchCommands.InsertWriter"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$WriteConcernWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$UpdateWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$HintWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$UpsertedReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$CountWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$DeleteWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$DefaultWriteResultReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$UpdateElementWriter$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$CountResultReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$WriteConcernErrorReader$"),
+      ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$WriteErrorReader$"),
+      // ---
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultRead"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultWrite_="),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultRead_="),

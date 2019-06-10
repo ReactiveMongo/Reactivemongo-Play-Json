@@ -103,7 +103,6 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
     "add object if does not exist but its field `_id` is set" in {
       // Check current document does not exist
       val query = BSONDocument("username" -> BSONString("Robert Roe"))
-
       val id = BSONObjectID.generate
 
       // Add document..
@@ -117,6 +116,25 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
               d.get("username") must beSome(BSONString("Robert Roe"))
             )
           }.await(1, timeout)
+      }
+    }
+
+    "delete inserted user" in {
+      val query = Json.obj("username" -> "To Be Deleted")
+      val id = BSONObjectID.generate
+      val user = User(
+        _id = Some(id), username = "To Be Deleted", height = 13
+      )
+
+      def find() = collection.find(query, Option.empty[JsObject]).one[User]
+
+      collection.insert.one(user).map(_.ok) must beTrue.await(1, timeout) and {
+        find() must beSome(user).awaitFor(timeout)
+      } and {
+        collection.delete.one(query).
+          map(_.n) must beTypedEqualTo(1).awaitFor(timeout)
+      } and {
+        find() must beNone.awaitFor(timeout)
       }
     }
   }
