@@ -15,7 +15,7 @@
  */
 package reactivemongo.play.json.commands
 
-import play.api.libs.json.{ Json, JsObject, OWrites }, Json.JsValueWrapper
+import play.api.libs.json.{ JsObject, OWrites }
 
 import reactivemongo.api.commands.{
   FindAndModifyCommand,
@@ -27,6 +27,9 @@ import reactivemongo.play.json.JSONSerializationPack
 object JSONFindAndModifyCommand
   extends FindAndModifyCommand[JSONSerializationPack.type] {
   val pack: JSONSerializationPack.type = JSONSerializationPack
+
+  def UpdateLastError(): FindAndModifyCommand.UpdateLastError.type =
+    sys.error("Deprecated/unused")
 }
 
 @deprecated("Will be internal/private", "0.17.0")
@@ -37,43 +40,13 @@ object JSONFindAndModifyImplicits {
     extends DealingWithGenericCommandErrorsReader[FindAndModifyResult] {
 
     def readResult(result: JsObject): FindAndModifyResult =
-      FindAndModifyResult(
-        (result \ "lastErrorObject").asOpt[JsObject].map { doc =>
-          UpdateLastError(
-            updatedExisting = (doc \ "updatedExisting").
-              asOpt[Boolean].getOrElse(false),
-            n = (doc \ "n").asOpt[Int].getOrElse(0),
-            err = (doc \ "err").asOpt[String],
-            upsertedId = (doc \ "upserted").toOption
-          )
-        },
-        (result \ "value").asOpt[JsObject]
-      )
+      sys.error("Deprecated/unused")
   }
 
   implicit object FindAndModifyWriter
     extends OWrites[ResolvedCollectionCommand[FindAndModify]] {
 
-    def writes(command: ResolvedCollectionCommand[FindAndModify]): JsObject = {
-      val optionalFields = List[Option[(String, JsValueWrapper)]](
-        command.command.sort.map("sort" -> _),
-        command.command.fields.map("fields" -> _)
-      ).flatten
-
-      Json.obj(
-        "findAndModify" -> command.collection,
-        "query" -> command.command.query
-      ) ++
-        Json.obj(optionalFields: _*) ++
-        (command.command.modify match {
-          case Update(document, fetchNewObject, upsert) => Json.obj(
-            "update" -> document,
-            "new" -> fetchNewObject,
-            "upsert" -> upsert
-          )
-
-          case Remove => Json.obj("remove" -> true)
-        })
-    }
+    def writes(command: ResolvedCollectionCommand[FindAndModify]): JsObject =
+      sys.error("Deprecated/unused")
   }
 }

@@ -23,7 +23,7 @@ import play.api.libs.json.{
   Json,
   JsArray,
   JsObject,
-  JsPath,
+  JsValue,
   OWrites,
   Reads,
   Writes
@@ -57,12 +57,6 @@ object `package` {
 object JSONBatchCommands
   extends BatchCommands[JSONSerializationPack.type] { commands =>
 
-  import play.api.libs.json.{
-    JsError,
-    JsValue,
-    JsResult,
-    JsSuccess
-  }
   import reactivemongo.api.commands.{
     CountCommand => CC,
     DeleteCommand => DC,
@@ -71,8 +65,6 @@ object JSONBatchCommands
     ResolvedCollectionCommand,
     UpdateCommand => UC
   }
-  import reactivemongo.core.protocol.MongoWireVersion
-  import reactivemongo.play.json.commands.CommonImplicits
 
   val pack = JSONSerializationPack
 
@@ -86,42 +78,18 @@ object JSONBatchCommands
   }
   val DistinctCommand = JSONDistinctCommand
 
-  implicit object DistinctWriter
-    extends pack.Writer[ResolvedCollectionCommand[DistinctCommand.Distinct]] {
-
-    import CommonImplicits.ReadConcernWriter
-
-    def writes(cmd: ResolvedCollectionCommand[DistinctCommand.Distinct]): pack.Document = {
-      val c = Json.obj(
-        "distinct" -> cmd.collection,
-        "key" -> cmd.command.keyString,
-        "query" -> cmd.command.query
-      )
-
-      if (cmd.command.version < MongoWireVersion.V32) c else {
-        c + ("readConcern" -> ReadConcernWriter.writes(cmd.command.readConcern))
-      }
-    }
+  object DistinctWriter
+    extends OWrites[ResolvedCollectionCommand[DistinctCommand.Distinct]] {
+    def writes(cmd: ResolvedCollectionCommand[DistinctCommand.Distinct]): JsObject = sys.error("Deprecated/unused")
   }
 
-  implicit object DistinctResultReader
-    extends pack.Reader[DistinctCommand.DistinctResult] {
-
-    private val path = JsPath \ "values"
-
-    def reads(js: JsValue): JsResult[DistinctCommand.DistinctResult] =
-      (js \ "values").toEither match {
-        case Right(JsArray(values)) =>
-          JsSuccess(DistinctCommand.DistinctResult(values.toList))
-
-        case Right(v)    => JsError(path, s"invalid JSON: $v")
-        case Left(error) => JsError(Seq(path -> Seq(error)))
-      }
+  object DistinctResultReader extends Reads[DistinctCommand.DistinctResult] {
+    def reads(js: JsValue) = sys.error("Deprecated/unused")
   }
 
-  implicit def CountWriter: OWrites[ResolvedCollectionCommand[CountCommand.Count]] = sys.error("Deprecated/unused")
+  def CountWriter: OWrites[ResolvedCollectionCommand[CountCommand.Count]] = sys.error("Deprecated/unused")
 
-  implicit def CountResultReader: Reads[CountCommand.CountResult] = sys.error("Deprecated/unused")
+  def CountResultReader: Reads[CountCommand.CountResult] = sys.error("Deprecated/unused")
 
   object JSONInsertCommand extends IC[JSONSerializationPack.type] {
     val pack = commands.pack
@@ -156,13 +124,12 @@ object JSONBatchCommands
     JSONFindAndModifyCommand,
     JSONFindAndModifyImplicits
   }
+
   val FindAndModifyCommand = JSONFindAndModifyCommand
 
-  implicit val FindAndModifyWriter =
-    JSONFindAndModifyImplicits.FindAndModifyWriter
+  @silent implicit def FindAndModifyWriter: JSONFindAndModifyImplicits.FindAndModifyWriter.type = sys.error("Deprecated/unused")
 
-  implicit val FindAndModifyReader =
-    JSONFindAndModifyImplicits.FindAndModifyResultReader
+  @silent implicit def FindAndModifyReader: JSONFindAndModifyImplicits.FindAndModifyResultReader.type = sys.error("Deprecated/unused")
 
   import reactivemongo.play.json.commands.{
     JSONAggregationFramework,

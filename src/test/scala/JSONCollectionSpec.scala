@@ -12,7 +12,7 @@ import reactivemongo.api.commands.{
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.core.Fragments
 
-class JSONCollectionSpec(implicit ee: ExecutionEnv)
+final class JSONCollectionSpec(implicit ee: ExecutionEnv)
   extends org.specs2.mutable.Specification {
 
   "JSON collection" title
@@ -119,6 +119,15 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
       }
     }
 
+    "find distinct height" in {
+      collection.distinct[Int, Set](
+        key = "height",
+        selector = None,
+        readConcern = ReadConcern.Local,
+        collation = None
+      ) must contain(atMost(12, 13)).awaitFor(timeout)
+    }
+
     "delete inserted user" in {
       val query = Json.obj("username" -> "To Be Deleted")
       val id = BSONObjectID.generate
@@ -142,17 +151,15 @@ class JSONCollectionSpec(implicit ee: ExecutionEnv)
   "JSONCollection.findAndModify" should {
     "be successful" in {
       val id = BSONObjectID.generate
-      val updateOp = collection.updateModifier(
-        User(
+
+      collection.findAndUpdate(
+        selector = Json.obj("_id" -> id),
+        update = User(
           _id = Some(id),
           username = "James Joyce", height = 1.264290338792695E+64
         ),
-        fetchNewObject = false, upsert = true
-      )
-
-      collection.findAndModify(
-        selector = Json.obj("_id" -> id),
-        modifier = updateOp,
+        fetchNewObject = false,
+        upsert = true,
         sort = None,
         fields = None,
         bypassDocumentValidation = false,
