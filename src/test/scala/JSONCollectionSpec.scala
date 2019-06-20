@@ -182,7 +182,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
         val expected = Json.parse("""{"$query":{"username":"John Doe"},"$readPreference":{"mode":"primary"}}""")
 
-        tests.merge(builder, ReadPreference.Primary) must_== expected
+        (tests.merge(
+          builder, ReadPreference.Primary): JsValue) must_=== expected
       }
 
       "write an JsObject with only defined options" >> {
@@ -193,7 +194,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
         "with query builder #1" in {
           val expected = Json.parse("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$readPreference":{"mode":"primary"}}""")
 
-          tests.merge(builder1, ReadPreference.Primary) must_== expected
+          (tests.merge(
+            builder1, ReadPreference.Primary): JsValue) must_=== expected
         }
 
         "with query builder #2" in {
@@ -201,7 +203,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
           val expected = Json.parse("""{"$query":{"username":"John Doe"},"$orderby":{"age":1},"$comment":"get john doe users sorted by age","$readPreference":{"mode":"primary"}}""")
 
-          tests.merge(builder2, ReadPreference.Primary) must_== expected
+          (tests.merge(
+            builder2, ReadPreference.Primary): JsValue) must_=== expected
         }
       }
     }
@@ -215,7 +218,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
         val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"readConcern":{"level":"local"},"$$readPreference":{"mode":"primary"}}""")
 
-        tests.merge(builder, ReadPreference.Primary) must_== expected
+        (tests.merge(
+          builder, ReadPreference.Primary): JsValue) must_=== expected
       }
 
       "write an JsObject with only defined options" >> {
@@ -226,7 +230,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
         "with query builder #1" in {
           val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"sort":{"age":1},"readConcern":{"level":"local"},"$$readPreference":{"mode":"primary"}}""")
 
-          tests.merge(builder1, ReadPreference.Primary) must_== expected
+          (tests.merge(
+            builder1, ReadPreference.Primary): JsValue) must_=== expected
         }
 
         "with query builder #2" in {
@@ -234,7 +239,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
           val expected = Json.parse(s"""{"find":"${collection.name}","skip":0,"tailable":false,"awaitData":false,"oplogReplay":false,"filter":{"username":"John Doe"},"sort":{"age":1},"comment":"get john doe users sorted by age","readConcern":{"level":"local"},"$$readPreference":{"mode":"primary"}}""")
 
-          tests.merge(builder2, ReadPreference.Primary) must_== expected
+          (tests.merge(
+            builder2, ReadPreference.Primary): JsValue) must_=== expected
         }
       }
     }
@@ -294,7 +300,7 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
 
       collection.find(Json.obj(), Option.empty[JsObject]).
         cursor[JsObject]().jsArray().
-        map(_.value.map { js => (js \ "username").as[String] }).
+        map(_.value.map { js => (js \ "username").as[String] }.toSeq).
         aka("extracted JSON array") must beTypedEqualTo(Seq(
           "Jane Doe", "Robert Roe", "James Joyce"
         )).await(1, timeout)

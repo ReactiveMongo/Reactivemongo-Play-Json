@@ -2,10 +2,21 @@ import sbt.Keys._
 import sbt._
 
 object Compiler {
+  val playLower = "2.5.0"
+  val playUpper = "2.7.4"
+
   lazy val settings = Seq(
-    scalaVersion := "2.12.6",
-    crossScalaVersions := Seq("2.11.12", scalaVersion.value),
+    scalaVersion := "2.12.8",
+    crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.0"),
     crossVersion in ThisBuild := CrossVersion.binary,
+    unmanagedSourceDirectories in Compile += {
+      val base = (sourceDirectory in Compile).value
+
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => base / "scala-2.13+"
+        case _                       => base / "scala-2.13-"
+      }
+    },
     scalacOptions ++= Seq(
       "-encoding", "UTF-8", "-target:jvm-1.8",
       "-unchecked",
@@ -16,11 +27,16 @@ object Compiler {
       "-Ywarn-numeric-widen",
       "-Ywarn-dead-code",
       "-Ywarn-value-discard",
-      "-Ywarn-infer-any",
-      "-Ywarn-unused",
-      "-Ywarn-unused-import",
       "-g:vars"
     ),
+    scalacOptions in Compile ++= {
+      if (scalaVersion.value.startsWith("2.13.")) Nil
+      else Seq(
+        "-Ywarn-infer-any",
+        "-Ywarn-unused",
+        "-Ywarn-unused-import"
+      )
+    },
     scalacOptions in Compile ++= {
       if (!scalaVersion.value.startsWith("2.11.")) Nil
       else Seq(
@@ -38,7 +54,7 @@ object Compiler {
       _.filterNot { opt => opt.startsWith("-X") || opt.startsWith("-Y") }
     },
     scalacOptions in (Compile, doc) ++= Seq(
-      "-Ywarn-dead-code", "-Ywarn-unused-import", "-unchecked", "-deprecation",
+      "-unchecked", "-deprecation",
       /*"-diagrams", */"-implicits", "-skip-packages", "samples") ++
       Opts.doc.title("ReactiveMongo Play JSON API") ++
       Opts.doc.version(Release.major.value)

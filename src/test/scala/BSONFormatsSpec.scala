@@ -192,7 +192,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     }
 
     "handle BSONSymbol" in {
-      val symbol = 'sss
+      val symbol = Symbol("sss")
       val bsymbol = BSONSymbol(symbol.toString())
       val jsymbol = Json.toJson(bsymbol)
       val bsymbolAgain = Json.fromJson[BSONSymbol](jsymbol)
@@ -200,7 +200,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
     }
 
     "convert special Symbol notation" in {
-      val symbol = 'sss
+      val symbol = Symbol("sss")
       val bsymbol = BSONSymbol(symbol.toString())
       val jsymbol = Json.obj(f"$$symbol" -> symbol.toString)
       Json.fromJson[BSONSymbol](jsymbol).get mustEqual bsymbol

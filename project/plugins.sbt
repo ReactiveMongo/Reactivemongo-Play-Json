@@ -5,7 +5,7 @@ addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.2")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0")
 
-addSbtPlugin("cchantep" % "sbt-hl-compiler" % "0.5")
+addSbtPlugin("cchantep" % "sbt-hl-compiler" % "0.7")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 

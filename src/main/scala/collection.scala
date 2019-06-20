@@ -23,9 +23,7 @@ import play.api.libs.json.{
   Json,
   JsArray,
   JsObject,
-  JsValue,
   OWrites,
-  Reads,
   Writes
 }
 
@@ -36,7 +34,6 @@ import reactivemongo.api.{
   ReadPreference
 }
 import reactivemongo.api.collections.{
-  BatchCommands,
   GenericCollection,
   GenericCollectionProducer
 }
@@ -51,96 +48,6 @@ object `package` {
   implicit object JSONCollectionProducer extends GenericCollectionProducer[JSONSerializationPack.type, JSONCollection] {
     def apply(db: DB, name: String, failoverStrategy: FailoverStrategy) = new JSONCollection(db, name, failoverStrategy, db.defaultReadPreference)
   }
-}
-
-@deprecated("BatchCommands will be removed from the API", "0.17.0")
-object JSONBatchCommands
-  extends BatchCommands[JSONSerializationPack.type] { commands =>
-
-  import reactivemongo.api.commands.{
-    CountCommand => CC,
-    DeleteCommand => DC,
-    InsertCommand => IC,
-    DistinctCommand => DistC,
-    ResolvedCollectionCommand,
-    UpdateCommand => UC
-  }
-
-  val pack = JSONSerializationPack
-
-  object JSONCountCommand extends CC[JSONSerializationPack.type] {
-    val pack = commands.pack
-  }
-  val CountCommand = JSONCountCommand
-
-  object JSONDistinctCommand extends DistC[JSONSerializationPack.type] {
-    val pack = commands.pack
-  }
-  val DistinctCommand = JSONDistinctCommand
-
-  object DistinctWriter
-    extends OWrites[ResolvedCollectionCommand[DistinctCommand.Distinct]] {
-    def writes(cmd: ResolvedCollectionCommand[DistinctCommand.Distinct]): JsObject = sys.error("Deprecated/unused")
-  }
-
-  object DistinctResultReader extends Reads[DistinctCommand.DistinctResult] {
-    def reads(js: JsValue) = sys.error("Deprecated/unused")
-  }
-
-  def CountWriter: OWrites[ResolvedCollectionCommand[CountCommand.Count]] = sys.error("Deprecated/unused")
-
-  def CountResultReader: Reads[CountCommand.CountResult] = sys.error("Deprecated/unused")
-
-  object JSONInsertCommand extends IC[JSONSerializationPack.type] {
-    val pack = commands.pack
-  }
-  val InsertCommand = JSONInsertCommand
-
-  type ResolvedInsert = ResolvedCollectionCommand[InsertCommand.Insert]
-
-  implicit def InsertWriter: OWrites[ResolvedInsert] = sys.error("Deprecated/unused")
-
-  object JSONUpdateCommand extends UC[JSONSerializationPack.type] {
-    val pack = commands.pack
-  }
-  val UpdateCommand = JSONUpdateCommand
-
-  type ResolvedUpdate = ResolvedCollectionCommand[UpdateCommand.Update]
-
-  implicit def UpdateWriter: OWrites[ResolvedUpdate] = sys.error("Deprecated/unused")
-
-  implicit def UpdateReader: Reads[UpdateCommand.UpdateResult] = sys.error("Deprecated/unused")
-
-  object JSONDeleteCommand extends DC[JSONSerializationPack.type] {
-    val pack = commands.pack
-  }
-  val DeleteCommand = JSONDeleteCommand
-
-  type ResolvedDelete = ResolvedCollectionCommand[DeleteCommand.Delete]
-
-  implicit def DeleteWriter: OWrites[ResolvedDelete] = sys.error("Deprecated/unused")
-
-  import reactivemongo.play.json.commands.{
-    JSONFindAndModifyCommand,
-    JSONFindAndModifyImplicits
-  }
-
-  val FindAndModifyCommand = JSONFindAndModifyCommand
-
-  @silent implicit def FindAndModifyWriter: JSONFindAndModifyImplicits.FindAndModifyWriter.type = sys.error("Deprecated/unused")
-
-  @silent implicit def FindAndModifyReader: JSONFindAndModifyImplicits.FindAndModifyResultReader.type = sys.error("Deprecated/unused")
-
-  import reactivemongo.play.json.commands.{
-    JSONAggregationFramework,
-    JSONAggregationImplicits
-  }
-  val AggregationFramework = JSONAggregationFramework
-
-  implicit val AggregateWriter = JSONAggregationImplicits.AggregateWriter
-  implicit val AggregateReader =
-    JSONAggregationImplicits.AggregationResultReader
-
 }
 
 /**

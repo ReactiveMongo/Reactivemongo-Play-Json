@@ -225,7 +225,7 @@ object JSONSerializationPack extends SerializationPack { self =>
     def names(document: JsObject): Set[String] = document.keys.toSet
 
     def array(document: JsObject, name: String): Option[Seq[JsValue]] =
-      (document \ name).asOpt[JsArray].map(_.value)
+      (document \ name).asOpt[JsArray].map(_.value.toSeq)
 
     def get(document: JsObject, name: String): Option[JsValue] =
       document.value.get(name)

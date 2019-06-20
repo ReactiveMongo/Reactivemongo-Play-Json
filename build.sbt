@@ -20,8 +20,7 @@ version ~= { ver =>
 
 Compiler.settings
 
-val playLower = "2.5.0"
-val playUpper = "2.7.1"
+import Compiler.{ playLower, playUpper }
 
 val playVer = Def.setting[String] {
   sys.env.get("PLAY_VERSION").getOrElse {
@@ -48,7 +47,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= {
-  val silencerVer = "1.2-SNAPSHOT"
+  val silencerVer = "1.4.1"
 
   def silencer = Seq(
     compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVer),
@@ -75,7 +74,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "4.3.2",
+  "org.specs2" %% "specs2-core" % "4.5.1",
   "org.slf4j" % "slf4j-simple" % "1.7.13").map(_ % Test)
 
 // Travis CI
@@ -121,8 +120,13 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
 // Publish
 val previousVersion = "0.12.1"
 val mimaSettings = mimaDefaultSettings ++ Seq(
-  mimaPreviousArtifacts := Set(
-    organization.value %% moduleName.value % previousVersion),
+  mimaPreviousArtifacts := {
+    if (!scalaVersion.value.startsWith("2.13.")) {
+      Set(organization.value %% moduleName.value % previousVersion)
+    } else {
+      Set.empty
+    }
+  },
   mimaBinaryIssueFilters ++= {
     def playFilters = {
       // ValidationError breaking change in Play 2.6

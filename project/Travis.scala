@@ -5,7 +5,7 @@ object Travis {
   // Travis CI
   val travisEnv = taskKey[Unit]("Print Travis CI env")
 
-  import Play.{ playLower, playUpper }
+  import Compiler.{ playLower, playUpper }
 
   def settings = Seq(
     travisEnv in Test := { // test:travisEnv from SBT CLI
