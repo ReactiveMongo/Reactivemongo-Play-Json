@@ -4,7 +4,7 @@ This is a JSON serialization pack for [ReactiveMongo](http://reactivemongo.org),
 
 ## Usage
 
-In your `project/Build.scala`:
+In your `build.sbt`:
 
 ```ocaml
 libraryDependencies ++= Seq(
@@ -21,7 +21,7 @@ The documentation is [available online](http://reactivemongo.org/releases/0.1x/d
 
 ReactiveMongo for Play2 can be built from this source repository.
 
-    sbt publish-local
+    sbt publishLocal
 
 To run the tests, use:
 
