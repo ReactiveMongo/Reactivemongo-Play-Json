@@ -195,6 +195,8 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
         "reactivemongo.play.json.BSONFormats$BSONDateTimeFormat$DateValue$"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONObjectIDFormat$OidValue$"),
+      ProblemFilters.exclude[MissingClassProblem](
+        "reactivemongo.play.json.BSONFormats$BSONDecimalFormat$DecimalValue$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONJavaScriptFormat$JavascriptValue$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONSymbolFormat$SymbolValue$"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
