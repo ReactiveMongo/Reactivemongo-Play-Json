@@ -645,7 +645,6 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     dateTime: PartialReads[BSONDateTime],
     timestamp: PartialReads[BSONTimestamp],
     binary: PartialReads[BSONBinary],
-    decimal: PartialReads[BSONDecimal],
     regex: PartialReads[BSONRegex],
     double: PartialReads[BSONDouble],
     integer: PartialReads[BSONInteger],
@@ -657,7 +656,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     symbol: PartialReads[BSONSymbol],
     array: PartialReads[BSONArray],
     doc: PartialReads[BSONDocument],
-    undef: PartialReads[BSONUndefined.type]
+    undef: PartialReads[BSONUndefined.type],
+    decimal: PartialReads[BSONDecimal]
   ): JsResult[BSONValue] =
     string.partialReads.
       orElse(objectID.partialReads).
@@ -691,7 +691,6 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     objectID: PartialWrites[BSONObjectID],
     javascript: PartialWrites[BSONJavaScript],
     dateTime: PartialWrites[BSONDateTime],
-    decimal: PartialWrites[BSONDecimal],
     timestamp: PartialWrites[BSONTimestamp],
     binary: PartialWrites[BSONBinary],
     regex: PartialWrites[BSONRegex],
@@ -705,7 +704,8 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
     symbol: PartialWrites[BSONSymbol],
     array: PartialWrites[BSONArray],
     doc: PartialWrites[BSONDocument],
-    undef: PartialWrites[BSONUndefined.type]
+    undef: PartialWrites[BSONUndefined.type],
+    decimal: PartialWrites[BSONDecimal]
   ): JsValue = string.partialWrites.
     orElse(objectID.partialWrites).
     orElse(javascript.partialWrites).

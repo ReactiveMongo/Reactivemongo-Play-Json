@@ -132,7 +132,7 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       // ValidationError breaking change in Play 2.6
       (Seq("ObjectID", "Binary", "String", "Symbol", "MaxKey", "Undefined",
         "Long", "Array", "Null", "MinKey", "DateTime", "Integer", "Double",
-        "Timestamp", "Regex", "Document", "Boolean", "JavaScript").
+        "Timestamp", "Regex", "Document", "Boolean", "JavaScript", "Decimal").
         flatMap { t =>
           Seq("filter", "filterNot", "collect").map { m =>
             ProblemFilters.exclude[IncompatibleMethTypeProblem](
@@ -188,15 +188,14 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultWrite_="),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultRead_="),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultWrite"),
-      ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.BSONDecimalFormat"),
+        ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONTimestampFormat$TimeValue$"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONDateTimeFormat$DateValue$"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONObjectIDFormat$OidValue$"),
-      ProblemFilters.exclude[MissingClassProblem](
-        "reactivemongo.play.json.BSONFormats$BSONDecimalFormat$DecimalValue$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONJavaScriptFormat$JavascriptValue$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.BSONFormats$BSONSymbolFormat$SymbolValue$"),
       ProblemFilters.exclude[ReversedMissingMethodProblem](
