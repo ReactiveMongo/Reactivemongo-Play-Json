@@ -186,7 +186,7 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       }
     }
 
-    "handle BSONDecimal from strict extended syntax" in {
+    "handle BSONDecimal from legacy extended syntax" in {
       val decimal = BigDecimal(0.7)
       val bs = BSONDecimal.fromBigDecimal(decimal).get
       val jbs = Json.obj(f"$$decimal" -> Json.obj(f"$$numberDecimal" -> decimal))
