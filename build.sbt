@@ -189,7 +189,7 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultRead_="),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultWrite"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.BSONDecimalFormat"),
-        ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
+      ProblemFilters.exclude[DirectAbstractMethodProblem]("play.api.libs.json.Reads.reads"),
       ProblemFilters.exclude[MissingClassProblem](
         "reactivemongo.play.json.BSONFormats$BSONTimestampFormat$TimeValue$"),
       ProblemFilters.exclude[MissingClassProblem](

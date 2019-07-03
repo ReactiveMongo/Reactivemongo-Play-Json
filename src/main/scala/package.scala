@@ -15,7 +15,7 @@
  */
 package reactivemongo.play.json
 
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 import play.api.libs.json.{
   Format,
@@ -289,27 +289,35 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   implicit object BSONDecimalFormat extends PartialFormat[BSONDecimal] {
 
     val partialReads: PartialFunction[JsValue, JsResult[BSONDecimal]] = {
-      case Decimal(v) => JsSuccess(BSONDecimal.fromBigDecimal(v).get)
+      case DecimalRead(v) => JsSuccess(BSONDecimal(v._1, v._2))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
-      case bsonDecimal: BSONDecimal => JsNumber(BSONDecimal.toBigDecimal(bsonDecimal).get)
+      @SuppressWarnings(Array("LooksLikeInterpolatedString"))
+      @inline def json: PartialFunction[BSONValue, JsValue] = {
+        case DecimalWrite(v) => v
+      }
+
+      json
     }
 
-    private[json] object Decimal {
+    private[json] object DecimalRead {
       @SuppressWarnings(Array("LooksLikeInterpolatedString"))
-      def unapply(obj: JsObject): Option[BigDecimal] =
-        (obj \ f"$$decimal").asOpt[JsValue].flatMap {
-          case n @ JsNumber(_) => Some(n.value)
-          case n @ JsString(_) => Some(BigDecimal(n.value))
-          case o @ JsObject(_) =>
-            (o \ f"$$numberDecimal").asOpt[JsValue].flatMap {
-              case n @ JsNumber(_) => Some(n.value)
-              case n @ JsString(_) => Some(BigDecimal(n.value))
-              case _               => None
-            }
-          case _ => None
-        }
+      def unapply(obj: JsObject): Option[BSONDecimal] =
+        (obj \ f"$$decimal").asOpt[JsValue].flatMap(strict) orElse
+          (obj \ f"$$decimal" \ f"$$numberDecimal").asOpt[JsValue].flatMap(strict)
+    }
+
+    private val strict: PartialFunction[JsValue, Option[BSONDecimal]] = {
+      case JsNumber(n) => BSONDecimal.fromBigDecimal(n).toOption
+      case JsString(n) => Try(BigDecimal(n)).map(BSONDecimal.fromBigDecimal).flatten.toOption
+      case _           => None
+    }
+
+    private[json] object DecimalWrite {
+      def unapply(bsonDecimal: BSONDecimal): Option[JsValue] = {
+        BSONDecimal.toBigDecimal(bsonDecimal).toOption.map(JsNumber.apply)
+      }
     }
   }
 

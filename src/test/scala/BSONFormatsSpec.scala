@@ -181,8 +181,14 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val decimal = BigDecimal(0.7)
       val bs = BSONDecimal.fromBigDecimal(decimal).get
       val jbs = Json.obj(f"$$decimal" -> decimal)
+      val jbs1 = Json.obj(f"$$decimal" -> "0.7")
+
       Json.fromJson[BSONDecimal](jbs) must beLike {
         case JsSuccess(res, _) => res must_=== bs
+      } and {
+        Json.fromJson[BSONDecimal](jbs1) must beLike {
+          case JsSuccess(res, _) => res must_=== bs
+        }
       }
     }
 
@@ -190,8 +196,14 @@ object BSONFormatsSpec extends org.specs2.mutable.Specification {
       val decimal = BigDecimal(0.7)
       val bs = BSONDecimal.fromBigDecimal(decimal).get
       val jbs = Json.obj(f"$$decimal" -> Json.obj(f"$$numberDecimal" -> decimal))
+      val jbs1 = Json.obj(f"$$decimal" -> Json.obj(f"$$numberDecimal" -> 0.7))
+
       Json.fromJson[BSONDecimal](jbs) must beLike {
         case JsSuccess(res, _) => res must_=== bs
+      } and {
+        Json.fromJson[BSONDecimal](jbs1) must beLike {
+          case JsSuccess(res, _) => res must_=== bs
+        }
       }
     }
 
