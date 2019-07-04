@@ -289,7 +289,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   implicit object BSONDecimalFormat extends PartialFormat[BSONDecimal] {
 
     val partialReads: PartialFunction[JsValue, JsResult[BSONDecimal]] = {
-      case DecimalRead(v) => JsSuccess(BSONDecimal(v._1, v._2))
+      case DecimalRead(v) => JsSuccess(v)
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
@@ -310,7 +310,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
     private val strict: PartialFunction[JsValue, Option[BSONDecimal]] = {
       case JsNumber(n) => BSONDecimal.fromBigDecimal(n).toOption
-      case JsString(n) => Try(BigDecimal(n)).map(BSONDecimal.fromBigDecimal).flatten.toOption
+      case JsString(n) => Try(BigDecimal(n)).flatMap(BSONDecimal.fromBigDecimal).toOption
       case _           => None
     }
 
