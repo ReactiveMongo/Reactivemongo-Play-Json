@@ -1,9 +1,5 @@
 import com.typesafe.tools.mima.core._, ProblemFilters._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import com.typesafe.tools.mima.plugin.MimaKeys.{
-  mimaBinaryIssueFilters,
-  mimaPreviousArtifacts
-}
 
 organization := "org.reactivemongo"
 
@@ -120,11 +116,12 @@ travisEnv in Test := { // test:travisEnv from SBT CLI
 // Publish
 val previousVersion = "0.12.1"
 val mimaSettings = mimaDefaultSettings ++ Seq(
+  mimaFailOnNoPrevious := false,
   mimaPreviousArtifacts := {
     if (!scalaVersion.value.startsWith("2.13.")) {
       Set(organization.value %% moduleName.value % previousVersion)
     } else {
-      Set.empty
+      Set.empty[ModuleID]
     }
   },
   mimaBinaryIssueFilters ++= {
@@ -183,6 +180,25 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$CountResultReader$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$WriteConcernErrorReader$"),
       ProblemFilters.exclude[MissingClassProblem]("reactivemongo.play.json.collection.JSONBatchCommands$WriteErrorReader$"),
+      // ---
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.JSONSerializationPack.IdentityReader"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.JSONSerializationPack.IdentityWriter"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.JSONSerializationPack.serializeAndWrite"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.JSONSerializationPack.readAndDeserialize"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.JSONSerializationPack.readAndDeserialize"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONBatchCommands.DistinctResultReader"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JSONBatchCommands.DistinctWriter"),
+      // ---
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.package.jsWriter"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.BSONFormats.jsWriter"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.ImplicitBSONHandlers.jsWriter"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.package.jsWriter"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.commands.JSONAggregationFramework.elementProducer"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.commands.JSONFindAndModifyCommand.UpdateLastError"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.commands.JSONFindAndModifyCommand.UpdateLastError"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.collection.JSONCollection.distinct$default$2"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.collection.JSONCollection.distinct"),
+      ProblemFilters.exclude[IncompatibleSignatureProblem]("reactivemongo.play.json.collection.JSONBatchCommands#DistinctResultReader.reads"),
       // ---
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$$defaultRead"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("reactivemongo.play.json.BSONFormats.reactivemongo$play$json$BSONFormats$_setter_$reactivemongo$play$json$BSONFormats$$defaultWrite_="),
