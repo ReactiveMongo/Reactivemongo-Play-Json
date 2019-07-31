@@ -43,7 +43,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= {
-  val silencerVer = "1.4.1"
+  val silencerVer = "1.4.2"
 
   def silencer = Seq(
     compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVer),
