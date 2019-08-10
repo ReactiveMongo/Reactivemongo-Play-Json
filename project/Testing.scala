@@ -13,6 +13,6 @@ object Testing {
     }),
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "4.0.1",
-      "org.slf4j" % "slf4j-simple" % "1.7.27").map(_ % Test)
+      "org.slf4j" % "slf4j-simple" % "1.7.28").map(_ % Test)
   )
 }
