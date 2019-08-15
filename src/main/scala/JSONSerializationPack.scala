@@ -162,6 +162,8 @@ object JSONSerializationPack extends SerializationPack { self =>
     case _ => JsError("error.expected.jsobject")
   }
 
+  private[reactivemongo] def afterReader[A, B](r: Reader[A])(f: A => B): Reader[B] = r.map(f)
+
   // ---
 
   /** A builder for serialization simple values (useful for the commands) */
