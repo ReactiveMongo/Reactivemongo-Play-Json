@@ -1,5 +1,6 @@
 import play.api.libs.json.{
   Json,
+  JsError,
   JsNumber,
   JsResult,
   JsSuccess,
@@ -29,30 +30,40 @@ class JsonSpec extends org.specs2.mutable.Specification {
     "convert an empty JSON and give an empty BSON doc" in {
       val json = Json.obj()
       val bson = BSONFormats.toBSON(json).get.asInstanceOf[BSONDocument]
-      bson.isEmpty must beTrue
-      val json2 = BSONFormats.toJSON(bson)
-      json2.as[JsObject].value.size mustEqual 0
+
+      bson.isEmpty must beTrue and {
+        BSONFormats.toJSON(bson).as[JsObject].value must beEmpty
+      }
     }
 
     "convert a simple JSON to BSON and vice versa" in {
       val json = Json.obj("coucou" -> JsString("jack"))
       val bson = JsObjectWriter.write(json)
       val json2 = JsObjectReader.read(bson)
-      json.toString mustEqual json2.toString
+
+      json.toString must_=== json2.toString
+    }
+
+    "not convert invalid JsString" in {
+      BSONFormats.toBSON(JsString(null)) must beLike[JsResult[BSONValue]] {
+        case JsError(details) => details.flatMap(_._2).
+          headOption.map(_.message) must beSome(
+            "unsupported invalid JsString(null)")
+      }
     }
 
     "convert a simple JSON array to BSON and vice versa" in {
       val json = Json.arr(JsString("jack"), JsNumber(9.1))
       val bson = BSONFormats.toBSON(json).get.asInstanceOf[BSONArray]
 
-      json.toString mustEqual BSONFormats.toJSON(bson).toString
+      json.toString must_=== BSONFormats.toJSON(bson).toString
     }
 
     "convert BSONDouble NaN using the extended systen" in {
       val bson = BSONDouble(Double.NaN)
       val json = BSONFormats.toJSON(bson)
 
-      json must_== Json.obj("$double" -> "NaN")
+      json must_=== Json.obj("$double" -> "NaN")
     }
 
     "convert a JSON doc containing an array and vice versa" in {
@@ -62,7 +73,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
       )
       val bson = JsObjectWriter.write(json)
 
-      json.toString mustEqual JsObjectReader.read(bson).toString
+      json.toString must_=== JsObjectReader.read(bson).toString
     }
 
     "format a JsPath for Mongo CRUD" in {
@@ -76,19 +87,20 @@ class JsonSpec extends org.specs2.mutable.Specification {
       val limitWriter = (lowWriter and highWriter)(unlift(Limit.unapply))
       val appWriter = (__ \ "limit").writemongo[Limit](limitWriter)
 
-      appWriter.writes(Limit(Some(1), None)) mustEqual
-        Json.obj("limit.low" -> 1)
-      appWriter.writes(Limit(Some(1), Some(2))) mustEqual
-        Json.obj("limit.low" -> 1, "limit.high" -> 2)
-
-      appWriter.writes(Limit(None, None)) mustEqual Json.obj()
+      appWriter.writes(Limit(Some(1), None)) must beTypedEqualTo(
+        Json.obj("limit.low" -> 1)) and {
+          appWriter.writes(Limit(Some(1), Some(2))) must beTypedEqualTo(
+            Json.obj("limit.low" -> 1, "limit.high" -> 2))
+        } and {
+          appWriter.writes(Limit(None, None)) must_=== Json.obj()
+        }
     }
 
     "provides a Play JSON OWrites for T : BSONDocumentWriter" in {
       implicit val bsonWriter = Macros.writer[Item]
       implicit val jsonOWrites: OWrites[Item] = BSONFormats.jsonOWrites[Item]
 
-      Json.toJson(Item("foo", "bar", 1)) must_== Json.obj(
+      Json.toJson(Item("foo", "bar", 1)) must_=== Json.obj(
         "name" -> "foo",
         "description" -> "bar",
         "occurrences" -> 1
@@ -99,7 +111,7 @@ class JsonSpec extends org.specs2.mutable.Specification {
       implicit val bsonWriter = Macros.writer[Item]
       implicit val jsonWrites: Writes[Item] = BSONFormats.jsonWrites[Item]
 
-      Json.toJson(Item("foo", "bar", 1)) must_== Json.obj(
+      Json.toJson(Item("foo", "bar", 1)) must_=== Json.obj(
         "name" -> "foo",
         "description" -> "bar",
         "occurrences" -> 1
@@ -125,9 +137,9 @@ class JsonSpec extends org.specs2.mutable.Specification {
       val format = BSONFormats.jsonOFormat[Expeditor]
 
       format.reads(format.writes(Expeditor("foo"))).
-        get must_== Expeditor("foo") and {
+        get must_=== Expeditor("foo") and {
           format.writes(format.reads(Json.obj("name" -> "foo")).get).
-            aka("JSON") must_== Json.obj("name" -> "foo")
+            aka("JSON") must_=== Json.obj("name" -> "foo")
         }
     }
 
@@ -137,9 +149,9 @@ class JsonSpec extends org.specs2.mutable.Specification {
       val format = BSONFormats.jsonOFormat[Expeditor]
 
       format.reads(format.writes(Expeditor("bar"))).
-        get must_== Expeditor("bar") and {
+        get must_=== Expeditor("bar") and {
           format.writes(format.reads(Json.obj("name" -> "bar")).get).
-            aka("JSON") must_== Json.obj("name" -> "bar")
+            aka("JSON") must_=== Json.obj("name" -> "bar")
         }
     }
   }

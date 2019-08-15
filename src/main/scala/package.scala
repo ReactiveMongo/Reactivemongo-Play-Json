@@ -162,7 +162,11 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
 
   implicit object BSONStringFormat extends PartialFormat[BSONString] {
     val partialReads: PartialFunction[JsValue, JsResult[BSONString]] = {
-      case JsString(str) => JsSuccess(BSONString(str))
+      case JsString(null) =>
+        JsError("unsupported invalid JsString(null)")
+
+      case JsString(str) =>
+        JsSuccess(BSONString(str))
     }
 
     val partialWrites: PartialFunction[BSONValue, JsValue] = {
