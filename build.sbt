@@ -276,7 +276,7 @@ val mimaSettings = mimaDefaultSettings ++ Seq(
       ProblemFilters.exclude[FinalMethodProblem]("reactivemongo.play.json.collection.JSONCollection.fullCollectionName"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JSONCollection.aggregate"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JSONCollection.aggregate1"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("reactivemongo.play.json.collection.JsCursorImpl.collect"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("reactivemongo.play.json.collection.JsCursorImpl.collect"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.collection.JSONQueryBuilder.merge"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("reactivemongo.play.json.commands.JSONAggregationFramework.PipelineOperator"),
       ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("reactivemongo.play.json.BSONFormats#PartialReads.reactivemongo$play$json$BSONFormats$PartialReads$$$outer"),
