@@ -216,6 +216,9 @@ object JSONSerializationPack extends SerializationPack { self =>
           Subtype.UuidSubtype.value.toByte))
       )
     }
+
+    def regex(pattern: String, options: String): Value =
+      Json.obj(f"$$regex" -> pattern, f"$$options" -> options)
   }
 
   private object Decoder
