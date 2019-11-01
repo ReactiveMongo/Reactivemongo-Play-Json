@@ -44,13 +44,15 @@ resolvers ++= Seq(
 
 libraryDependencies ++= {
   val silencerVer = "1.4.2"
+  val baseVer = (version in ThisBuild).value // w-o play qualifier
 
   def silencer = Seq(
     compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVer),
     "com.github.ghik" %% "silencer-lib" % silencerVer % Provided)
 
   Seq(
-  "org.reactivemongo" %% "reactivemongo" % (version in ThisBuild).value % Provided cross CrossVersion.binary,
+    "org.reactivemongo" %% "reactivemongo" % baseVer % Provided cross CrossVersion.binary,
+    "org.reactivemongo" %% "reactivemongo-bson-macros" % baseVer % Test,
     "com.typesafe.play" %% "play-json" % playVer.value % Provided cross CrossVersion.binary) ++ silencer
 }
 
