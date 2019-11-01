@@ -2,7 +2,14 @@ import scala.util.{ Failure, Try }
 
 import scala.concurrent.Await
 
-import reactivemongo.api.{ Cursor, ReadConcern, WriteConcern }
+import reactivemongo.api.{
+  Cursor,
+  FailoverStrategy,
+  ReadConcern,
+  ReadPreference,
+  WriteConcern
+}
+
 import reactivemongo.api.commands.{
   CommandError,
   UnitBox,
@@ -23,8 +30,8 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
   import play.api.libs.json._
   import reactivemongo.play.json._
   import reactivemongo.play.json.collection.JSONCollection
-  import reactivemongo.api.{ FailoverStrategy, ReadPreference }
   import reactivemongo.bson._
+  import reactivemongo.api.bson.compat._
 
   case class User(
       _id: Option[BSONObjectID] = None, username: String, height: Double
