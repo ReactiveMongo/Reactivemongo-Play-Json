@@ -75,7 +75,7 @@ testOptions in Test += Tests.Cleanup(cl => {
 })
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "4.8.0",
+  "org.specs2" %% "specs2-core" % "4.8.1",
   "org.slf4j" % "slf4j-simple" % "1.7.29").map(_ % Test)
 
 // Travis CI
