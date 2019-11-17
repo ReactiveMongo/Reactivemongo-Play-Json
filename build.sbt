@@ -5,8 +5,6 @@ organization := "org.reactivemongo"
 
 name := "reactivemongo-play-json"
 
-ThisBuild / resolvers += Resolver.sonatypeRepo("staging")
-
 version ~= { ver =>
   sys.env.get("RELEASE_SUFFIX") match {
     case Some(suffix) => ver.span(_ != '-') match {
