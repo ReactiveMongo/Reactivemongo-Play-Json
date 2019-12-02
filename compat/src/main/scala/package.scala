@@ -7,7 +7,12 @@ import play.api.libs.json.{ JsObject, JsString, JsValue }
  * `play.api.libs.json` and `reactivemongo.api.bson`.
  *
  * {{{
+ * import play.api.libs.json.JsValue
+ * import reactivemongo.api.bson.BSONValue
+ *
  * import reactivemongo.play.json.compat._
+ *
+ * def foo(v: BSONValue): JsValue = v // ValueConverters.fromValue
  * }}}
  *
  * For more specific imports, see [[ValueConverters]] and [[HandlerConverters]].

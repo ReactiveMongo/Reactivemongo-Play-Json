@@ -60,6 +60,8 @@ object ValueConverters extends ValueConverters
  * using [[$syntaxDocBaseUrl MongoDB Extended JSON]] syntax (v2).
  *
  * {{{
+ * import play.api.libs.json.JsValue
+ * import reactivemongo.api.bson.BSONValue
  * import reactivemongo.play.json.compat.ValueConverters._
  *
  * def foo(v: BSONValue): JsValue =
@@ -87,14 +89,12 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Binary syntax]]:
    *
-   * {{{
-   * { "\$binary":
+   * `{ "\$binary":
    *    {
    *       "base64": "<payload>",
    *       "subType": "<t>"
    *    }
-   * }
-   * }}}
+   * }`
    */
   implicit final def fromBinary(bin: BSONBinary): JsObject =
     JsObject(Map[String, JsValue](
@@ -109,9 +109,7 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Date syntax]]:
    *
-   * {{{
-   * { "\$date": { "\$numberLong": "<millis>" } }
-   * }}}
+   * `{ "\$date": { "\$numberLong": "<millis>" } }`
    */
   implicit final def fromDateTime(bson: BSONDateTime): JsObject =
     JsObject(Map[String, JsValue](f"$$date" -> dsl.long(bson.value)))
@@ -119,9 +117,7 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Decimal128 syntax]]:
    *
-   * {{{
-   * { "\$numberDecimal": "<number>" }
-   * }}}
+   * `{ "\$numberDecimal": "<number>" }`
    */
   implicit final def fromDecimal(bson: BSONDecimal): JsObject =
     JsObject(Map[String, JsValue](f"$$numberDecimal" -> JsString(bson.toString)))
@@ -131,15 +127,10 @@ trait ValueConverters
     JsObject(bson.elements.map(elem => elem.name -> fromValue(elem.value)))
 
   /**
-   * See [[$syntaxDocBaseUrl/#bson.Double syntax]]:
+   * See [[$syntaxDocBaseUrl/#bson.Double syntax]];
    *
-   * {{{
-   * // For finite numbers:
-   * { "\$numberDouble": "<decimal string>" }
-   *
-   * // For other numbers:
-   * { "\$numberDouble": <"Infinity"|"-Infinity"|"NaN"> }
-   * }}}
+   * - For finite numbers: `{ "\$numberDouble": "<decimal string>" }`
+   * - For other numbers: `{ "\$numberDouble": <"Infinity"|"-Infinity"|"NaN"> }`
    */
   implicit final def fromDouble(bson: BSONDouble): JsObject =
     dsl.double(bson.value)
@@ -147,28 +138,26 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Int32 syntax]]:
    *
-   * {{{
-   * { "\$numberInt": "<number>" }
-   * }}}
+   * `{ "\$numberInt": "<number>" }`
    */
   implicit final def fromInteger(bson: BSONInteger): JsObject =
     dsl.int(bson.value)
 
   /**
-   * {{{
-   * { "\$code": "<javascript>" }
-   * }}}
+   * See [[$specsUrl syntax]]:
+   *
+   * `{ "\$code": "<javascript>" }`
    */
   implicit final def fromJavaScript(bson: BSONJavaScript): JsObject =
     JsObject(Map[String, JsValue](f"$$code" -> JsString(bson.value)))
 
   /**
-   * {{{
-   * {
+   * See [[$specsUrl syntax]]:
+   *
+   * `{
    *   "\$code": "<javascript>",
    *   "\$scope": { }
-   * }
-   * }}}
+   * }`
    */
   implicit final def fromJavaScriptWS(bson: BSONJavaScriptWS): JsObject =
     JsObject(Map[String, JsValue](
@@ -178,9 +167,7 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Int64 syntax]]:
    *
-   * {{{
-   * { "\$numberLong": "<number>" }
-   * }}}
+   * `{ "\$numberLong": "<number>" }`
    */
   implicit final def fromLong(bson: BSONLong): JsObject =
     dsl.long(bson.value)
@@ -189,9 +176,9 @@ trait ValueConverters
     JsObject(Map[String, JsValue](f"$$maxKey" -> JsNumber(1)))
 
   /**
-   * {{{
-   * { "\$maxKey": 1 }
-   * }}}
+   * See [[$specsUrl syntax]]:
+   *
+   * `{ "\$maxKey": 1 }`
    */
   implicit final val fromMaxKey: BSONMaxKey => JsObject = _ => JsMaxKey
 
@@ -199,9 +186,9 @@ trait ValueConverters
     JsObject(Map[String, JsValue](f"$$minKey" -> JsNumber(1)))
 
   /**
-   * {{{
-   * { "\$minKey": 1 }
-   * }}}
+   * See [[$specsUrl syntax]]:
+   *
+   * `{ "\$minKey": 1 }`
    */
   implicit final val fromMinKey: BSONMinKey => JsObject = _ => JsMinKey
 
@@ -210,9 +197,7 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.ObjectId syntax]]:
    *
-   * {{{
-   * { "\$oid": "<ObjectId bytes>" }
-   * }}}
+   * `{ "\$oid": "<ObjectId bytes>" }`
    */
   implicit final def fromObjectID(bson: BSONObjectID): JsObject =
     JsObject(Map[String, JsValue](f"$$oid" -> JsString(bson.stringify)))
@@ -220,14 +205,12 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Regular-Expression syntax]]:
    *
-   * {{{
-   * { "\$regularExpression":
+   * `{ "\$regularExpression":
    *    {
    *       "pattern": "<regexPattern>",
    *       "options": "<options>"
    *   }
-   * }
-   * }}}
+   * }`
    */
   implicit final def fromRegex(rx: BSONRegex): JsObject = {
     val builder = scala.collection.mutable.Map.empty[String, JsValue]
@@ -245,9 +228,9 @@ trait ValueConverters
   implicit final def fromStr(bson: BSONString): JsString = JsString(bson.value)
 
   /**
-   * {{{
-   * { "\$symbol": "<name>" }
-   * }}}
+   * See [[$specsUrl syntax]]:
+   *
+   * `{ "\$symbol": "<name>" }`
    */
   implicit final def fromSymbol(bson: BSONSymbol): JsObject =
     JsObject(Map[String, JsValue](f"$$symbol" -> JsString(bson.value)))
@@ -255,9 +238,7 @@ trait ValueConverters
   /**
    * See [[$syntaxDocBaseUrl/#bson.Timestamp syntax]]:
    *
-   * {{{
-   * { "\$timestamp": {"t": <t>, "i": <i>} }
-   * }}}
+   * `{ "\$timestamp": {"t": <t>, "i": <i>} }`
    */
   implicit final def fromTimestamp(ts: BSONTimestamp): JsObject =
     JsObject(Map[String, JsValue](
@@ -268,9 +249,9 @@ trait ValueConverters
     JsObject(Map[String, JsValue](f"$$undefined" -> JsTrue))
 
   /**
-   * {{{
-   * { "\$undefined": true }
-   * }}}
+   * See [[$specsUrl syntax]]:
+   *
+   * `{ "\$undefined": true }`
    */
   implicit final val fromUndefined: BSONUndefined => JsObject = _ => JsUndefined
 

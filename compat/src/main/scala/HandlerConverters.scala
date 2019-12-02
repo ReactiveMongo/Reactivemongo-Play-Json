@@ -133,7 +133,7 @@ private[json] sealed trait LowPriorityHandlerConverters2
 
   /**
    * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentWriter
+   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentWriterConv
    *
    * def foo[T](jw: play.api.libs.json.OWrites[T]) = {
    *   val w: reactivemongo.api.bson.BSONDocumentWriter[T] = jw
@@ -162,11 +162,11 @@ private[json] sealed trait LowPriorityHandlerConverters2
 
   /**
    * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentWriter
+   * import reactivemongo.play.json.compat.HandlerConverters.fromDocumentReader
    *
-   * def foo[T](jw: play.api.libs.json.OWrites[T]) = {
-   *   val w: reactivemongo.api.bson.BSONDocumentWriter[T] = jw
-   *   w
+   * def foo[T](r: reactivemongo.api.bson.BSONDocumentReader[T]) = {
+   *   val jr: play.api.libs.json.Reads[T] = r
+   *   jr
    * }
    * }}}
    */
@@ -200,7 +200,7 @@ private[json] sealed trait LowPriorityHandlerConverters3 {
 
   /**
    * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentReader
+   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentReaderConv
    *
    * def lorem[T](jr: play.api.libs.json.Reads[T]) = {
    *   val w: reactivemongo.api.bson.BSONDocumentReader[T] = jr
