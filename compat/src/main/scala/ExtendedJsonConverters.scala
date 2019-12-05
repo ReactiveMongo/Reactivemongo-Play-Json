@@ -2,7 +2,7 @@ package reactivemongo.play.json.compat
 
 import scala.language.implicitConversions
 
-import play.api.libs.json.{ JsNull, JsNumber, JsValue }
+import play.api.libs.json.{ JsNull, JsObject, JsValue }
 
 import reactivemongo.api.bson.{
   BSONArray,
@@ -28,54 +28,61 @@ import reactivemongo.api.bson.{
 }
 
 /**
- * See [[compat$]] and [[ValueConverters]].
+ * @define syntaxDocBaseUrl https://docs.mongodb.com/manual/reference/mongodb-extended-json
+ * @define specsUrl https://github.com/mongodb/specifications/blob/master/source/extended-json.rst
  *
- * Note that as there is not a JSON equivalent for each BSON value
- * (`BSONDateTime`, or even distinction between BSON long/int).
- *
- * So for example, using the default JSON handlers,
- * a same `Long` property can be written in some documents
- * as BSON long (`NumberLong`), and in some other as BSON integer
- * (see [[ValueConverters.toNumber]]), which is ok to read all these documents,
- * but can impact the MongoDB queries (same for date/time values that
- * will be serialized as BSON string, rather than BSON date/time or timestamp).
- */
-object ValueConverters extends ValueConverters {
-  private[compat] val logger =
-    org.slf4j.LoggerFactory.getLogger(classOf[ValueConverters])
-}
-
-/**
  * Implicit conversions for value types between
- * `play.api.libs.json` and `reactivemongo.api.bson`.
+ * `play.api.libs.json` and `reactivemongo.api.bson`,
+ * using [[$syntaxDocBaseUrl MongoDB Extended JSON]] syntax (v2).
  *
  * {{{
  * import play.api.libs.json.JsValue
  * import reactivemongo.api.bson.BSONValue
- * import reactivemongo.play.json.compat.ValueConverters._
+ * import reactivemongo.play.json.compat.ExtendedJsonConverters._
  *
  * def foo(v: BSONValue): JsValue =
- *   implicitly[JsValue](v) // ValueConverters.fromValue
+ *   implicitly[JsValue](v) // ExtendedJsonConverters.fromValue
  *
  * def bar(v: JsValue): BSONValue =
- *   implicitly[BSONValue](v) // ValueConverters.toValue
+ *   implicitly[BSONValue](v) // ExtendedJsonConverters.toValue
  * }}}
  *
  * ''Note:'' Logger `reactivemongo.api.play.json.ValueConverters` can be used to debug.
+ *
+ * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table specifications]].
  */
-trait ValueConverters
-  extends SharedValueConverters with LowPriority1Converters {
+object ExtendedJsonConverters extends ExtendedJsonCompat
+  with SharedValueConverters with LowPriority1ExtendedJson {
 
-  implicit final def fromDouble(bson: BSONDouble): JsNumber =
-    JsNumber(bson.value)
+  /**
+   * See [[$syntaxDocBaseUrl/#bson.Double syntax]];
+   *
+   * - For finite numbers: `{ "\$numberDouble": "<decimal string>" }`
+   * - For other numbers: `{ "\$numberDouble": <"Infinity"|"-Infinity"|"NaN"> }`
+   */
+  implicit final def fromDouble(bson: BSONDouble): JsObject =
+    dsl.double(bson.value)
 
-  implicit final def fromInteger(bson: BSONInteger): JsNumber =
-    JsNumber(bson.value)
+  /**
+   * See [[$syntaxDocBaseUrl/#bson.Int32 syntax]]:
+   *
+   * `{ "\$numberInt": "<number>" }`
+   */
+  implicit final def fromInteger(bson: BSONInteger): JsObject =
+    dsl.int(bson.value)
 
-  implicit final def fromLong(bson: BSONLong): JsNumber = JsNumber(bson.value)
+  /**
+   * See [[$syntaxDocBaseUrl/#bson.Int64 syntax]]:
+   *
+   * `{ "\$numberLong": "<number>" }`
+   */
+  implicit final def fromLong(bson: BSONLong): JsObject =
+    dsl.long(bson.value)
+
 }
 
-private[json] sealed trait LowPriority1Converters { _: ValueConverters =>
+private[json] sealed trait LowPriority1ExtendedJson {
+  _: ExtendedJsonConverters.type =>
 
   implicit final def fromValue(bson: BSONValue): JsValue = bson match {
     case arr: BSONArray => fromArray(arr)

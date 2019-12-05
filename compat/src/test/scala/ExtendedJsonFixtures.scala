@@ -35,7 +35,7 @@ import reactivemongo.api.bson.{
 
 import reactivemongo.play.json.compat._
 
-trait ConverterFixtures {
+object ExtendedJsonFixtures {
   val time = 1574884443000L
 
   val joid = JsObject(Map(f"$$oid" -> JsString("5dded45b0000000000000000")))

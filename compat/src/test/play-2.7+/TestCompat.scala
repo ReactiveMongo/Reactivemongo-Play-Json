@@ -1,0 +1,3 @@
+package reactivemongo
+
+object TestCompat {}

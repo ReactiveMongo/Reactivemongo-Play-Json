@@ -78,7 +78,7 @@ import scala.math.BigDecimal.{
 }
 import scala.math.BigDecimal
 
-@deprecated("Use `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
 object `package` extends ImplicitBSONHandlers {
   object readOpt {
     implicit def optionReads[T](implicit r: Reads[T]): Reads[Option[T]] =
@@ -93,7 +93,7 @@ object `package` extends ImplicitBSONHandlers {
 class JSONException(message: String, cause: Throwable = null)
   extends RuntimeException(message, cause)
 
-@deprecated("Use `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
 object BSONFormats extends BSONFormats {
   def jsonOWrites[T](implicit bsonWriter: BSONDocumentWriter[T]): OWrites[T] =
     OWrites[T] { in: T => BSONDocumentFormat.json(bsonWriter.write(in)) }
@@ -119,7 +119,7 @@ object BSONFormats extends BSONFormats {
 /**
  * JSON Formats for BSONValues.
  */
-@deprecated("Use `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
 sealed trait BSONFormats extends LowerImplicitBSONHandlers {
   trait PartialReads[T <: BSONValue] extends Reads[T] {
     def partialReads: PartialFunction[JsValue, JsResult[T]]
@@ -732,7 +732,7 @@ sealed trait BSONFormats extends LowerImplicitBSONHandlers {
       throw new JSONException(s"Unhandled json value: $bson"))
 }
 
-@deprecated("Use `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat._` from `reactivemongo-play-json-compat`", "0.19.2")
 object Writers {
   implicit class JsPathMongo(val jp: JsPath) extends AnyVal {
     def writemongo[A](implicit writer: Writes[A]): OWrites[A] =
@@ -757,13 +757,13 @@ object Writers {
 
 import play.api.libs.json.{ JsObject, JsValue }
 
-@deprecated("Use `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
 object ImplicitBSONHandlers extends ImplicitBSONHandlers
 
 /**
  * Implicit BSON Handlers (BSONDocumentReader/BSONDocumentWriter for JsObject)
  */
-@deprecated("Use `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
 sealed trait ImplicitBSONHandlers extends BSONFormats {
   implicit object JsObjectWriter extends BSONDocumentWriter[JsObject] {
     def write(obj: JsObject): BSONDocument =
@@ -787,7 +787,7 @@ sealed trait ImplicitBSONHandlers extends BSONFormats {
   }
 }
 
-@deprecated("Use `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
+@deprecated("Will be replaced `reactivemongo.play.json.compat.HandlerConverters._` from `reactivemongo-play-json-compat`", "0.19.2")
 sealed trait LowerImplicitBSONHandlers {
   import scala.language.implicitConversions
   import reactivemongo.bson.{ BSONElement, Producer }

@@ -4,7 +4,7 @@ import play.api.libs.json.{ JsFalse => F, JsTrue => T }
 
 import reactivemongo.api.bson.BSONBoolean
 
-private[compat] trait ValueConvertersCompat {
+private[compat] trait ExtendedJsonCompat {
   implicit final val toFalse: F.type => BSONBoolean = {
     val stable = BSONBoolean(false)
     _ => stable

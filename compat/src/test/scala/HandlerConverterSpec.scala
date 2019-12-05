@@ -27,9 +27,7 @@ import reactivemongo.api.bson.{
 
 import org.specs2.specification.core.Fragment
 
-final class HandlerConverterSpec
-  extends org.specs2.mutable.Specification with ConverterFixtures {
-
+final class HandlerConverterSpec extends org.specs2.mutable.Specification {
   "Handler converters" title
 
   import reactivemongo.play.json.compat._
@@ -90,12 +88,12 @@ final class HandlerConverterSpec
 
         jh.reads(dsl.double(3.4D)) must beLike[JsResult[Bar.type]] {
           case JsSuccess(Bar, _) =>
-            jh.writes(Bar) must_=== dsl.double(1.2D)
+            jh.writes(Bar) must_=== JsNumber(1.2D)
         }
       }
     }
 
-    Fragment.foreach(fixtures) {
+    Fragment.foreach(HandlerFixtures.fixtures) {
       case (js, bson) =>
         s"between $js & $bson" >> {
           "convert writer to BSON" in {
@@ -121,9 +119,7 @@ final class HandlerConverterSpec
     "from JSON object" >> {
       "in writer" in {
         val doc = BSONDocument("ok" -> 1)
-        implicit val jw = OWrites[Double] { _ =>
-          Json.obj("ok" -> dsl.int(1))
-        }
+        implicit val jw = OWrites[Double] { _ => Json.obj("ok" -> 1) }
         def bw1: BSONDocumentWriter[Double] = jw
         def bw2 = implicitly[BSONDocumentWriter[Double]]
 
@@ -162,7 +158,7 @@ final class HandlerConverterSpec
 
     "to JSON object" >> {
       "in writer" in {
-        val doc = Json.obj("ok" -> dsl.int(2))
+        val doc = Json.obj("ok" -> 2)
         implicit val bw = BSONDocumentWriter[Int](_ => BSONDocument("ok" -> 2))
         def jw: OWrites[Int] = bw
 
@@ -178,7 +174,7 @@ final class HandlerConverterSpec
         fromDocumentReader(br).
           reads(Json.obj("ok" -> 1)) must beLike[JsResult[None.type]] {
             case JsSuccess(None, _) => jr.reads(Json.obj(
-              "ok" -> dsl.int(2))) must beLike[JsResult[None.type]] {
+              "ok" -> 2)) must beLike[JsResult[None.type]] {
               case JsSuccess(None, _) => ok
             }
           }
@@ -192,10 +188,70 @@ final class HandlerConverterSpec
         val jh: OFormat[Unit] = bh
 
         jh.reads(Json.obj("ok" -> 1)) must beLike[JsResult[Unit]] {
-          case JsSuccess((), _) => jh.writes({}) must_=== Json.obj(
-            "foo" -> dsl.long(1L))
+          case JsSuccess((), _) => jh.writes({}) must_=== Json.obj("foo" -> 1L)
         }
       }
     }
   }
+}
+
+object HandlerFixtures {
+  import _root_.play.api.libs.json.{
+    JsArray,
+    JsNull,
+    JsObject,
+    JsString,
+    JsValue
+  }
+
+  import reactivemongo.api.bson.{
+    BSONArray,
+    BSONBinary,
+    BSONBoolean,
+    BSONDecimal,
+    BSONJavaScript,
+    BSONJavaScriptWS,
+    BSONMaxKey,
+    BSONMinKey,
+    BSONNull,
+    BSONString,
+    BSONSymbol,
+    BSONUndefined,
+    BSONValue
+  }
+
+  import _root_.reactivemongo.play.json.compat.{ dsl, JsTrue, ValueConverters }
+  import ExtendedJsonFixtures.{ joid, jdt, jts, jsJavaScript, jre, boid, bdt, bre, bts, jsBinUuid, jsJavaScriptWS, uuid }
+
+  val jarr = JsArray(Seq(joid, JsString("foo"), jdt, dsl.symbol("bar"), jts, jsJavaScript("lorem()"), jre, JsArray(Seq(JsNumber(1), JsNumber(2L))), JsNumber(3.4D)))
+
+  val barr = BSONArray(boid, BSONString("foo"), bdt, BSONSymbol("bar"), bts, BSONJavaScript("lorem()"), bre, BSONArray(BSONInteger(1), BSONInteger(2 /* #note1 */ )), BSONDouble(3.4D))
+
+  val jdoc = JsObject(Map[String, JsValue]("oid" -> joid, "str" -> JsString("foo"), "dt" -> jdt, "sym" -> dsl.symbol("bar"), "ts" -> jts, "nested" -> JsObject(Map[String, JsValue]("foo" -> JsString("bar"), "lorem" -> JsNumber(Long.MaxValue))), "js" -> jsJavaScript("lorem()"), "re" -> jre, "array" -> jarr, "double" -> JsNumber(3.4D)))
+
+  val bdoc = BSONDocument("oid" -> boid, "str" -> BSONString("foo"), "dt" -> bdt, "sym" -> BSONSymbol("bar"), "ts" -> bts, "nested" -> BSONDocument("foo" -> "bar", "lorem" -> Long.MaxValue), "js" -> BSONJavaScript("lorem()"), "re" -> bre, "array" -> barr, "double" -> BSONDouble(3.4D))
+
+  val fixtures = Seq[(JsValue, BSONValue)](
+    jsBinUuid -> BSONBinary(uuid),
+    JsTrue -> BSONBoolean(true),
+    JsNumber(1.23D) -> BSONDouble(1.23D),
+    JsString("Foo") -> BSONString("Foo"),
+    JsNumber(1) -> BSONInteger(1),
+    JsNumber(1L) -> BSONInteger(1), // #note1: no int/long discriminator in JSON
+    JsNumber(Long.MaxValue) -> BSONLong(Long.MaxValue),
+    joid -> boid,
+    jdt -> bdt,
+    jts -> bts,
+    dsl.decimal(BigDecimal("0")) -> BSONDecimal.PositiveZero,
+    jre -> bre,
+    jsJavaScript("foo()") -> BSONJavaScript("foo()"),
+    jsJavaScriptWS("bar()") -> BSONJavaScriptWS("bar()", BSONDocument.empty),
+    dsl.symbol("sym") -> BSONSymbol("sym"),
+    ValueConverters.JsUndefined -> BSONUndefined,
+    JsNull -> BSONNull,
+    ValueConverters.JsMaxKey -> BSONMaxKey,
+    ValueConverters.JsMinKey -> BSONMinKey,
+    jarr -> barr,
+    jdoc -> bdoc)
+
 }

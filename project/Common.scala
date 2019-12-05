@@ -16,7 +16,7 @@ object Common extends AutoPlugin {
   private val silencerVer = "1.4.4"
 
   val playVersion = settingKey[String]("Play version")
-  val playDir = settingKey[String]("Play source directory")
+  val playDirs = settingKey[Seq[String]]("Play source directory")
   import Compiler.{ playLower, playUpper }
 
   override def projectSettings = Compiler.settings ++ Seq(
@@ -42,15 +42,18 @@ object Common extends AutoPlugin {
         else playUpper
       }
     },
-    playDir := {
-      if (playVersion.value startsWith "2.5") "play-2.5-"
-      else "play-2.6+"
+    playDirs := {
+      val v = playVersion.value
+
+      if (v startsWith "2.5") Seq("play-2.5-", "play-2.7-")
+      else if (v startsWith "2.6") Seq("play-2.6+", "play-2.7-")
+      else Seq("play-2.6+", "play-2.7+")
     },
-    unmanagedSourceDirectories in Compile += {
-      (sourceDirectory in Compile).value / playDir.value
+    unmanagedSourceDirectories in Compile ++= playDirs.value.map { dir =>
+      (sourceDirectory in Compile).value / dir
     },
-    unmanagedSourceDirectories in Test += {
-      (sourceDirectory in Test).value / playDir.value
+    unmanagedSourceDirectories in Test ++= playDirs.value.map { dir =>
+      (sourceDirectory in Test).value / dir
     },
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "4.8.1",

@@ -33,7 +33,11 @@ import reactivemongo.api.bson.{
 /**
  * See [[compat$]] and [[HandlerConverters]]
  */
-object HandlerConverters extends HandlerConverters
+object HandlerConverters extends HandlerConverters {
+  private[compat] val logger =
+    org.slf4j.LoggerFactory.getLogger(classOf[HandlerConverters])
+
+}
 
 /**
  * Implicit conversions for handler types
@@ -56,8 +60,6 @@ object HandlerConverters extends HandlerConverters
  * ''Note:'' Logger `reactivemongo.api.play.json.HandlerConverters` can be used to debug.
  */
 trait HandlerConverters extends LowPriorityHandlerConverters1 {
-  private[compat] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
   /**
    * Implicit conversion from Play JSON `OFormat` to the BSON API.
    *
@@ -112,6 +114,8 @@ private[json] sealed trait LowPriorityHandlerConverters1
 
 private[json] sealed trait LowPriorityHandlerConverters2
   extends LowPriorityHandlerConverters3 { _: LowPriorityHandlerConverters1 =>
+
+  import HandlerConverters.logger
 
   /**
    * Provided there is a Play JSON `OWrites`, resolve a new one.
@@ -190,6 +194,8 @@ private[json] sealed trait LowPriorityHandlerConverters2
 
 private[json] sealed trait LowPriorityHandlerConverters3 {
   _: LowPriorityHandlerConverters2 =>
+
+  import HandlerConverters.logger
 
   implicit final def toWriter[T](w: Writes[T]): BSONWriter[T] = BSONWriter[T] { t => ValueConverters.toValue(w writes t) }
 
