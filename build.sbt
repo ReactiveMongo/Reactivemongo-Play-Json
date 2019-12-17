@@ -32,7 +32,7 @@ lazy val `play-json-compat` = project.in(file("compat")).
     libraryDependencies ++= {
       val baseVer = (version in ThisBuild).value // w-o play qualifier
 
-      ("org.slf4j" % "slf4j-api" % "1.7.29" % Provided) +: Seq(
+      ("org.slf4j" % "slf4j-api" % "1.7.30" % Provided) +: Seq(
         "org.reactivemongo" %% "reactivemongo-bson-api" % baseVer,
         playJson.value).
         map { _ % Provided cross CrossVersion.binary }

@@ -57,7 +57,7 @@ object Common extends AutoPlugin {
     },
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "4.8.1",
-      "org.slf4j" % "slf4j-simple" % "1.7.29").map(_ % Test),
+      "org.slf4j" % "slf4j-simple" % "1.7.30").map(_ % Test),
     libraryDependencies ++= Seq(
       compilerPlugin(
         ("com.github.ghik" %% "silencer-plugin" % silencerVer).
