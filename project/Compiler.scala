@@ -2,7 +2,7 @@ import sbt.Keys._
 import sbt._
 
 object Compiler {
-  val playLower = "2.5.0"
+  val playLower = "2.5.19"
   val playUpper = "2.7.4"
 
   lazy val settings = Seq(
