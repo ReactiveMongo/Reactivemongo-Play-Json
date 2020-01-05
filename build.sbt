@@ -229,6 +229,8 @@ lazy val legacy = project.in(file("legacy")).
 
 lazy val root = (project in file(".")).
   settings(Release.settings ++ Seq(
+    publish := ({}),
+    publishTo := None,
     mimaPreviousArtifacts := Set.empty[ModuleID], // TODO
   )).
   aggregate(`play-json-compat`, legacy)
