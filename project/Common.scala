@@ -75,7 +75,7 @@ object Common extends AutoPlugin {
       (sourceDirectory in Test).value / dir
     },
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "4.8.1",
+      "org.specs2" %% "specs2-core" % "4.8.3",
       "org.slf4j" % "slf4j-simple" % "1.7.30").map(_ % Test),
     libraryDependencies ++= Seq(
       compilerPlugin(
