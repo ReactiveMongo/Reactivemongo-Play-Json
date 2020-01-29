@@ -42,7 +42,7 @@ final class JSONCollectionSpec(implicit ee: ExecutionEnv)
   lazy val collectionName = s"test_users_${System identityHashCode this}"
   lazy val bsonCollection = db(collectionName)
   lazy val collection = new JSONCollection(
-    db, collectionName, new FailoverStrategy(), ReadPreference.primary)
+    db, collectionName, FailoverStrategy.default, ReadPreference.primary)
 
   "JSONCollection.save" should {
     "add object if there does not exist in database" in {
