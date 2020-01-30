@@ -2,7 +2,7 @@ package reactivemongo.play.json.compat
 
 import scala.language.implicitConversions
 
-import play.api.libs.json.{ JsNull, JsNumber, JsValue }
+import play.api.libs.json.{ JsNull, JsNumber, JsValue, Json }
 
 import reactivemongo.api.bson.{
   BSONArray,
@@ -73,6 +73,8 @@ trait ValueConverters
     JsNumber(bson.value)
 
   implicit final def fromLong(bson: BSONLong): JsNumber = JsNumber(bson.value)
+
+  implicit final def toJsValueWrapper[T <: BSONValue](value: T): Json.JsValueWrapper = implicitly[JsValue](value)
 }
 
 private[json] sealed trait LowPriority1Converters { _: ValueConverters =>

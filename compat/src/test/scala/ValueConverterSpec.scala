@@ -33,6 +33,10 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
     val jsOut: JsValue = bsonIn
 
     jsIn aka BSONValue.pretty(bsonIn) must_=== jsOut and {
+      val o = Json.obj("bson" -> bsonIn) // Json.JsValueWrapper conversion
+
+      (o \ "bson").get must_=== jsOut
+    } and {
       jsOut.validate[T] aka Json.stringify(jsOut) must beLike[JsResult[T]] {
         case JsSuccess(out, _) => out must_=== value
       }
