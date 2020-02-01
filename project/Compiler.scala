@@ -3,7 +3,7 @@ import sbt._
 
 object Compiler {
   val playLower = "2.5.0"
-  val playUpper = "2.7.4"
+  val playUpper = "2.8.1"
 
   lazy val settings = Seq(
     scalaVersion := "2.12.10",
