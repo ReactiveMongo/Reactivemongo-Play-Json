@@ -10,7 +10,7 @@ addSbtPlugin("cchantep" % "sbt-scaladoc-compiler" % "0.1")
 
 addSbtPlugin("cchantep" % "sbt-hl-compiler" % "0.7")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.3")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.4")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
 
