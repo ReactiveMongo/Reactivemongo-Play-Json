@@ -13,7 +13,10 @@ object Common extends AutoPlugin {
 
   val previousVersion = "0.12.1"
 
-  private val silencerVer = "1.4.4"
+  private val silencerVer = Def.setting[String] {
+    if (scalaBinaryVersion.value == "2.11") "1.4.4"
+    else "1.6.0"
+  }
 
   val playVersion = settingKey[String]("Play version")
   val playDirs = settingKey[Seq[String]]("Play source directory")
@@ -79,9 +82,9 @@ object Common extends AutoPlugin {
       "org.slf4j" % "slf4j-simple" % "1.7.30").map(_ % Test),
     libraryDependencies ++= Seq(
       compilerPlugin(
-        ("com.github.ghik" %% "silencer-plugin" % silencerVer).
+        ("com.github.ghik" %% "silencer-plugin" % silencerVer.value).
           cross(CrossVersion.full)),
-      ("com.github.ghik" %% "silencer-lib" % silencerVer % Provided).
+      ("com.github.ghik" %% "silencer-lib" % silencerVer.value % Provided).
         cross(CrossVersion.full)),
     // mimaDefaultSettings
     mimaFailOnNoPrevious := false,

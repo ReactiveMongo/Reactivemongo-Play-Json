@@ -6,7 +6,7 @@ object Compiler {
   val playUpper = "2.8.1"
 
   lazy val settings = Seq(
-    scalaVersion := "2.12.10",
+    scalaVersion := "2.12.11",
     crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.1"),
     crossVersion in ThisBuild := CrossVersion.binary,
     unmanagedSourceDirectories in Compile += {

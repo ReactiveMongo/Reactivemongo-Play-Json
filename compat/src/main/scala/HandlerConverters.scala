@@ -19,6 +19,7 @@ import _root_.play.api.libs.json.{
 }
 
 import reactivemongo.api.bson.{
+  BSONDocument,
   BSONDocumentHandler,
   BSONDocumentReader,
   BSONDocumentWriter,
@@ -92,7 +93,7 @@ trait HandlerConverters extends LowPriorityHandlerConverters1 {
    * Based on the compatibility conversions,
    * provides instances of Play JSON `OWrites` for the new BSON value API.
    */
-  implicit def jsonWriterNewValue[B <: BSONValue, L](implicit w: BSONDocumentWriter[B], conv: L => B): OWrites[L] = w.beforeWrite[L](conv)
+  implicit def jsonWriterNewDocument[L](implicit conv: L => BSONDocument): OWrites[L] = fromDocumentWriter(BSONDocumentWriter[L](conv))
 
   /**
    * Based on the compatibility conversions,
@@ -109,6 +110,12 @@ private[json] sealed trait LowPriorityHandlerConverters1
 
   implicit final def fromHandler[T](h: BSONHandler[T]): Format[T] =
     Format[T](fromReader(h), fromWriter(h))
+
+  /**
+   * Based on the compatibility conversions,
+   * provides instances of Play JSON `Writes` for the new BSON value API.
+   */
+  implicit def jsonWriterNewValue[B <: BSONValue, L](implicit conv: L => B): Writes[L] = fromWriter(BSONWriter[L](conv))
 
 }
 
