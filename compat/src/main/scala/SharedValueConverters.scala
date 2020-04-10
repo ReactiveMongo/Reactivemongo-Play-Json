@@ -144,7 +144,7 @@ private[json] trait SharedValueConverters
    * `{ "\$oid": "<ObjectId bytes>" }`
    */
   implicit final def fromObjectID(bson: BSONObjectID): JsObject =
-    JsObject(Map[String, JsValue](f"$$oid" -> JsString(bson.stringify)))
+    dsl.objectID(bson)
 
   /**
    * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Regular-Expression syntax]]:

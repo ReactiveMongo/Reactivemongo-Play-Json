@@ -3,7 +3,7 @@ package reactivemongo
 import _root_.play.api.libs.json._
 import reactivemongo.api.bson.{
   BSON,
-  BSONDocumentReader,
+  BSONReader,
   BSONDocumentWriter,
   BSONValue
 }
@@ -44,7 +44,7 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
       import _root_.reactivemongo.play.json.compat.HandlerConverters._
 
       val bsonW: BSONDocumentWriter[T] = implicitly[OWrites[T]]
-      val bsonR: BSONDocumentReader[T] = implicitly[Reads[T]]
+      val bsonR: BSONReader[T] = implicitly[Reads[T]]
 
       bsonW.writeTry(value) must beSuccessfulTry[BSONValue].like {
         case written => written must_=== bsonIn and {

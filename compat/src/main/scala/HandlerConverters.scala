@@ -9,7 +9,6 @@ import _root_.play.api.libs.json.{
   Format,
   JsError,
   JsSuccess,
-  JsObject,
   JsResultException,
   Json,
   OFormat,
@@ -73,7 +72,7 @@ trait HandlerConverters extends LowPriorityHandlerConverters1 {
    * }
    * }}}
    */
-  implicit final def toDocumentHandler[T](h: OFormat[T]): BSONDocumentHandler[T] = BSONDocumentHandler.provided[T](toDocumentReader(h), toDocumentWriter(h))
+  implicit final def toDocumentHandler[T](h: OFormat[T]): BSONDocumentHandler[T] = BSONDocumentHandler.provided[T](toDocumentReaderConv(h), toDocumentWriterConv(h))
 
   /**
    * Implicit conversion from new `BSONDocumentHandler` to Play JSON.
@@ -87,7 +86,7 @@ trait HandlerConverters extends LowPriorityHandlerConverters1 {
    * }
    * }}}
    */
-  implicit final def fromDocumentHandler[T](h: BSONDocumentHandler[T]): OFormat[T] = OFormat[T](fromDocumentReader(h), fromDocumentWriter(h))
+  implicit final def fromDocumentHandler[T](h: BSONDocumentHandler[T]): OFormat[T] = OFormat[T](fromReaderConv(h), fromDocumentWriter(h))
 
   /**
    * Based on the compatibility conversions,
@@ -99,37 +98,79 @@ trait HandlerConverters extends LowPriorityHandlerConverters1 {
    * Based on the compatibility conversions,
    * provides instances of Play JSON `Reads` for the new BSON value API.
    */
-  implicit def jsonReaderNewValue[B <: BSONValue, L](implicit r: BSONDocumentReader[B], conv: B => L): Reads[L] = r.afterRead[L](conv)
+  implicit def jsonReaderNewValue[B <: BSONValue, L](implicit r: BSONReader[B], conv: B => L): Reads[L] = r.afterRead[L](conv)
 }
 
 private[json] sealed trait LowPriorityHandlerConverters1
   extends LowPriorityHandlerConverters2 { _: HandlerConverters =>
 
   implicit final def toHandler[T](h: Format[T]): BSONHandler[T] =
-    BSONHandler.provided[T](toReader(h), toWriter(h))
+    BSONHandler.provided[T](toReaderConv(h), toWriter(h))
 
   implicit final def fromHandler[T](h: BSONHandler[T]): Format[T] =
-    Format[T](fromReader(h), fromWriter(h))
+    Format[T](fromReaderConv(h), fromWriterConv(h))
 
   /**
    * Based on the compatibility conversions,
    * provides instances of Play JSON `Writes` for the new BSON value API.
+   *
+   * {{{
+   * import play.api.libs.json.Writes
+   * import reactivemongo.api.bson.BSONObjectID
+   * import reactivemongo.play.json.compat.jsonWriterNewValue
+   *
+   * val w = implicitly[Writes[BSONObjectID]]
+   * }}}
    */
-  implicit def jsonWriterNewValue[B <: BSONValue, L](implicit conv: L => B): Writes[L] = fromWriter(BSONWriter[L](conv))
+  implicit def jsonWriterNewValue[B <: BSONValue, L](implicit conv: L => B): Writes[L] = fromWriterConv(BSONWriter[L](conv))
 
 }
 
 private[json] sealed trait LowPriorityHandlerConverters2
   extends LowPriorityHandlerConverters3 { _: LowPriorityHandlerConverters1 =>
 
-  import HandlerConverters.logger
-
   /**
-   * Provided there is a Play JSON `OWrites`, resolve a new one.
+   * Provided there is a Play JSON `OWrites`, resolve a document writer.
+   *
+   * {{{
+   * import play.api.libs.json.OWrites
+   * import reactivemongo.api.bson.BSONDocumentWriter
+   * import reactivemongo.play.json.compat.toDocumentWriter
+   *
+   * def foo[T : OWrites]: BSONDocumentWriter[T] =
+   *   implicitly[BSONDocumentWriter[T]]
+   * }}}
+   *
+   * @see [[toDocumentWriterConv]]
    */
   implicit final def toDocumentWriter[T](implicit w: OWrites[T]): BSONDocumentWriter[T] = toDocumentWriterConv[T](w)
 
-  implicit final def toReader[T](r: Reads[T]): BSONReader[T] =
+  /**
+   * {{{
+   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentWriterConv
+   *
+   * def foo[T](jw: play.api.libs.json.OWrites[T]) = {
+   *   val w: reactivemongo.api.bson.BSONDocumentWriter[T] = jw
+   *   w
+   * }
+   * }}}
+   */
+  implicit final def toDocumentWriterConv[T](w: OWrites[T]): BSONDocumentWriter[T] = BSONDocumentWriter[T] { t => ValueConverters.toDocument(w writes t) }
+
+  /**
+   * Converts a Play JSON `Reads` to a BSON reader.
+   *
+   * {{{
+   * import play.api.libs.json.Reads
+   * import reactivemongo.api.bson.BSONReader
+   * import reactivemongo.play.json.compat.toReaderConv
+   *
+   * def foo[T](implicit r: Reads[T]): BSONReader[T] = r
+   * }}}
+   *
+   * @see [[toDocumentWriterConv]]
+   */
+  implicit final def toReaderConv[T](r: Reads[T]): BSONReader[T] =
     BSONReader.from[T] { bson =>
       val js = ValueConverters fromValue bson
 
@@ -143,16 +184,20 @@ private[json] sealed trait LowPriorityHandlerConverters2
     }
 
   /**
-   * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentWriterConv
+   * Provided there is a Play JSON `Reads`, resolve a BSON reader.
    *
-   * def foo[T](jw: play.api.libs.json.OWrites[T]) = {
-   *   val w: reactivemongo.api.bson.BSONDocumentWriter[T] = jw
-   *   w
-   * }
+   * {{{
+   * import play.api.libs.json.Reads
+   * import reactivemongo.api.bson.BSONReader
+   * import reactivemongo.play.json.compat.toReader
+   *
+   * def foo[T: Reads]: BSONReader[T] = implicitly[BSONReader[T]]
    * }}}
+   *
+   * @see [[toDocumentWriterConv]]
    */
-  implicit final def toDocumentWriterConv[T](w: OWrites[T]): BSONDocumentWriter[T] = BSONDocumentWriter[T] { t => ValueConverters.toDocument(w writes t) }
+  implicit final def toReader[T](implicit r: Reads[T]): BSONReader[T] =
+    toReaderConv(r)
 
   /**
    * {{{
@@ -171,9 +216,11 @@ private[json] sealed trait LowPriorityHandlerConverters2
     }
   }
 
-  /**
+  /*
+   * Provided as BSON document reader, resolves a JSON one.
+   *
    * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.fromDocumentReader
+   * import reactivemongo.play.json.compat.fromDocumentReaderConv
    *
    * def foo[T](r: reactivemongo.api.bson.BSONDocumentReader[T]) = {
    *   val jr: play.api.libs.json.Reads[T] = r
@@ -181,7 +228,8 @@ private[json] sealed trait LowPriorityHandlerConverters2
    * }
    * }}}
    */
-  implicit final def fromDocumentReader[T](r: BSONDocumentReader[T]): Reads[T] =
+  /*
+  final def fromDocumentReaderConv[T](r: BSONDocumentReader[T]): Reads[T] =
     Reads[T] {
       case obj @ JsObject(_) =>
         r.readTry(ValueConverters toDocument obj) match {
@@ -197,6 +245,7 @@ private[json] sealed trait LowPriorityHandlerConverters2
       case _ =>
         JsError("error.expected.jsobject")
     }
+   */
 }
 
 private[json] sealed trait LowPriorityHandlerConverters3 {
@@ -207,30 +256,27 @@ private[json] sealed trait LowPriorityHandlerConverters3 {
   implicit final def toWriter[T](w: Writes[T]): BSONWriter[T] = BSONWriter[T] { t => ValueConverters.toValue(w writes t) }
 
   /**
-   * Provided there is a Play JSON `Reads`, resolve a new one.
-   */
-  implicit final def toDocumentReader[T](implicit r: Reads[T]): BSONDocumentReader[T] = toDocumentReaderConv[T](r)
-
-  /**
-   * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.toDocumentReaderConv
    *
-   * def lorem[T](jr: play.api.libs.json.Reads[T]) = {
-   *   val w: reactivemongo.api.bson.BSONDocumentReader[T] = jr
-   *   w
-   * }
+   * Raises a `JsError` is the JSON value is not a `JsObject`.
+   *
+   * {{{
+   * import reactivemongo.play.json.compat.toDocumentReaderConv
+   *
+   * def lorem[T](jr: play.api.libs.json.Reads[T]) =
+   *   toDocumentReaderConv(jr)
    * }}}
    */
-  implicit final def toDocumentReaderConv[T](r: Reads[T]): BSONDocumentReader[T] = BSONDocumentReader.from[T] { bson =>
-    r.reads(ValueConverters fromDocument bson) match {
-      case JsSuccess(result, _) => Success(result)
+  final def toDocumentReaderConv[T](r: Reads[T]): BSONDocumentReader[T] =
+    BSONDocumentReader.from[T] { bson =>
+      r.reads(ValueConverters fromDocument bson) match {
+        case JsSuccess(result, _) => Success(result)
 
-      case JsError(details) =>
-        Failure(JsResultException(details))
+        case JsError(details) =>
+          Failure(JsResultException(details))
+      }
     }
-  }
 
-  implicit final def fromWriter[T](w: BSONWriter[T]): Writes[T] =
+  implicit final def fromWriterConv[T](w: BSONWriter[T]): Writes[T] =
     SafeBSONWriter.unapply(w) match {
       case Some(sw) => Writes { t =>
         ValueConverters.fromValue(sw safeWrite t)
@@ -244,7 +290,7 @@ private[json] sealed trait LowPriorityHandlerConverters3 {
       }
     }
 
-  implicit final def fromReader[T](r: BSONReader[T]): Reads[T] =
+  implicit final def fromReaderConv[T](r: BSONReader[T]): Reads[T] =
     Reads[T] { js =>
       r.readTry(ValueConverters toValue js) match {
         case Success(t) => JsSuccess(t)
@@ -256,4 +302,19 @@ private[json] sealed trait LowPriorityHandlerConverters3 {
         }
       }
     }
+
+  /**
+   * Provided there is a BSON reader, a JSON one is resolved.
+   *
+   * {{{
+   * import play.api.libs.json.Reads
+   * import reactivemongo.api.bson.BSONReader
+   * import reactivemongo.play.json.compat.fromReader
+   *
+   * def foo[T: BSONReader]: Reads[T] = implicitly[Reads[T]]
+   * }}}
+   */
+  implicit final def fromReader[T](implicit r: BSONReader[T]): Reads[T] =
+    fromReaderConv(r)
+
 }
