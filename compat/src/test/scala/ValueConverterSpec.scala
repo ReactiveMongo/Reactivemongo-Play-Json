@@ -25,7 +25,9 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
 
   // ---
 
-  private def valueConversionSpec[T: Reads: OWrites](value: T) = {
+  private def valueConversionSpec[T: OWrites](
+    value: T)(implicit jsr: Reads[T]) = {
+
     import _root_.reactivemongo.play.json.compat.ValueConverters._
 
     val jsIn: JsValue = Json.toJson(value)
@@ -44,7 +46,7 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
       import _root_.reactivemongo.play.json.compat.HandlerConverters._
 
       val bsonW: BSONDocumentWriter[T] = implicitly[OWrites[T]]
-      val bsonR: BSONReader[T] = implicitly[Reads[T]]
+      val bsonR: BSONReader[T] = jsr
 
       bsonW.writeTry(value) must beSuccessfulTry[BSONValue].like {
         case written => written must_=== bsonIn and {
@@ -54,7 +56,7 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
         // Not implicit conversion, but implicit derived instances
         BSON.write(value) must beSuccessfulTry[BSONValue].like {
           case written => written must_=== bsonIn and {
-            BSON.read(written) must beSuccessfulTry(value)
+            BSON.read(written)(bsonR) must beSuccessfulTry(value)
           }
         }
       }
