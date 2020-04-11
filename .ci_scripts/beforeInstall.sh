@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# TODO: Remove
+
 SCRIPT_DIR=`dirname $0 | sed -e "s|^\./|$PWD/|"`
 
 # Install MongoDB
