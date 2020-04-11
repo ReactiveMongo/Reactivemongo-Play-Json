@@ -37,6 +37,7 @@ commands:
                     mkdir test-reports
                     find . -path '*/test-reports/*' -name '*.xml' \
                       -print -exec cp {} test-reports \;
+          when: always
 
 jobs:
   unit_play25:
@@ -66,6 +67,7 @@ jobs:
       - save_cache:
           paths:
             - $HOME/.ivy2
+            - $HOME/.coursier/cache
             - $HOME/.sbt
             - $HOME/sbt
           key: play25-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
@@ -101,6 +103,7 @@ jobs:
       - save_cache:
           paths:
             - $HOME/.ivy2
+            - $HOME/.coursier/cache
             - $HOME/.sbt
             - $HOME/sbt
           key: play26-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
@@ -136,6 +139,7 @@ jobs:
       - save_cache:
           paths:
             - $HOME/.ivy2
+            - $HOME/.coursier/cache
             - $HOME/.sbt
             - $HOME/sbt
           key: play27-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
@@ -171,6 +175,7 @@ jobs:
       - save_cache:
           paths:
             - $HOME/.ivy2
+            - $HOME/.coursier/cache
             - $HOME/.sbt
             - $HOME/sbt
           key: play28-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
