@@ -13,6 +13,7 @@ import _root_.play.api.libs.json.{
 }
 
 import reactivemongo.api.bson.{
+  BSONDateTime,
   BSONDocument,
   BSONDocumentHandler,
   BSONDocumentReader,
@@ -20,8 +21,12 @@ import reactivemongo.api.bson.{
   BSONDouble,
   BSONHandler,
   BSONInteger,
+  BSONJavaScript,
   BSONLong,
+  BSONObjectID,
+  BSONTimestamp,
   BSONReader,
+  BSONValue,
   BSONWriter
 }
 
@@ -34,18 +39,35 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
 
   "Converters" should {
     "from JSON" >> {
-      "convert reader" in {
-        implicit val jr = Reads[Long] { _ => JsSuccess(1L) }
-        def bvr: BSONReader[Long] = jr
-        def bdr: BSONDocumentReader[Long] = jr
+      "convert reader" >> {
+        "for BSONLong" in {
+          implicit val jr = Reads[Long] { _ => JsSuccess(1L) }
+          def bvr: BSONReader[Long] = jr
+          //def bdr: BSONDocumentReader[Long] = jr
 
-        toReader(jr).readTry(BSONLong(2L)) must beSuccessfulTry(1L) and {
-          bvr.readTry(BSONLong(3L)) must beSuccessfulTry(1L)
-        } and {
-          bvr.readTry(dsl.long(4L)) must beSuccessfulTry(1L)
-        } and {
-          bdr.readTry(BSONDocument(
-            f"$$numberLong" -> 1)) must beSuccessfulTry(1L)
+          toReaderConv(jr).readTry(BSONLong(2L)) must beSuccessfulTry(1L) and {
+            bvr.readTry(BSONLong(3L)) must beSuccessfulTry(1L)
+          } and {
+            bvr.readTry(dsl.long(4L)) must beSuccessfulTry(1L)
+          } and {
+            //bdr.readTry(BSONDocument(
+            //f"$$numberLong" -> 1)) must beSuccessfulTry(1L)
+            ok
+          }
+        }
+
+        "for BSONObjectID" in {
+          import ExtendedJsonFixtures.boid
+
+          implicit val jr = Reads[BSONObjectID] { _ => JsSuccess(boid) }
+          def br1: BSONReader[BSONObjectID] = jr
+          def br2 = implicitly[BSONReader[BSONObjectID]]
+
+          toReaderConv(jr).readTry(boid) must beSuccessfulTry(boid) and {
+            br1.readTry(dsl.objectID(boid)) must beSuccessfulTry(boid)
+          } and {
+            br2.readTry(dsl.objectID(boid)) must beSuccessfulTry(boid)
+          }
         }
       }
 
@@ -65,15 +87,29 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
     }
 
     "to JSON" >> {
-      "convert reader" in {
-        implicit val br = BSONReader[Unit] { _ => () }
-        def jr: Reads[Unit] = br
+      "convert reader" >> {
+        "for Unit" in {
+          implicit val br = BSONReader[Unit] { _ => () }
+          def jr: Reads[Unit] = br
 
-        fromReader(br).reads(JsNumber(1)) must beLike[JsResult[Unit]] {
-          case JsSuccess((), _) =>
-            jr.reads(JsNumber(2)) must beLike[JsResult[Unit]] {
-              case JsSuccess((), _) => ok
-            }
+          fromReaderConv(br).reads(JsNumber(1)) must beLike[JsResult[Unit]] {
+            case JsSuccess((), _) =>
+              jr.reads(JsNumber(2)) must beLike[JsResult[Unit]] {
+                case JsSuccess((), _) => ok
+              }
+          }
+        }
+
+        "for document" in {
+          import ExtendedJsonFixtures.{ bdoc, jdoc }
+
+          implicit val br = implicitly[BSONDocumentReader[BSONDocument]]
+          val jr1: Reads[BSONDocument] = br
+          val jr2 = implicitly[Reads[BSONDocument]]
+
+          jr1.reads(jdoc) must_=== JsSuccess(bdoc) and {
+            jr2.reads(jdoc) must_=== JsSuccess(bdoc)
+          }
         }
       }
 
@@ -109,7 +145,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
             implicit val bw = BSONWriter[Int] { _ => bson }
             def jw: Writes[Int] = bw
 
-            fromWriter(bw).writes(1) must_=== js and {
+            fromWriterConv(bw).writes(1) must_=== js and {
               jw.writes(2) must_=== js
             }
           }
@@ -117,25 +153,34 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
     }
 
     "from JSON object" >> {
-      "in writer" in {
-        val doc = BSONDocument("ok" -> 1)
-        implicit val jw = OWrites[Double] { _ => Json.obj("ok" -> 1) }
-        def bw1: BSONDocumentWriter[Double] = jw
-        def bw2 = implicitly[BSONDocumentWriter[Double]]
+      "in writer" >> {
+        "as document for BSONDouble" in {
+          val doc = BSONDocument("ok" -> 1)
+          implicit val jw = OWrites[Double] { _ => Json.obj("ok" -> 1) }
+          def bw1: BSONDocumentWriter[Double] = jw
+          def bw2 = implicitly[BSONDocumentWriter[Double]]
 
-        toWriter(jw).writeTry(1.0D) must beSuccessfulTry(doc) and {
-          bw1.writeTry(1.1D) must beSuccessfulTry(doc)
-        } and {
-          bw2.writeTry(1.2D) must beSuccessfulTry(doc)
+          toWriter(jw).writeTry(1.0D) must beSuccessfulTry(doc) and {
+            bw1.writeTry(1.1D) must beSuccessfulTry(doc)
+          } and {
+            bw2.writeTry(1.2D) must beSuccessfulTry(doc)
+          }
+        }
+
+        "using compatibility conversion for BSONObjectID" in {
+          import ExtendedJsonFixtures.{ boid, joid }
+          val w = implicitly[Writes[BSONObjectID]]
+
+          w.writes(boid) must beTypedEqualTo(joid)
         }
       }
 
       "in reader" in {
         implicit val jr: Reads[Float] = Reads[Float](_ => JsSuccess(1.2F))
-        def br1: BSONDocumentReader[Float] = jr
-        def br2 = implicitly[BSONDocumentReader[Float]]
+        def br1: BSONReader[Float] = jr
+        def br2 = implicitly[BSONReader[Float]]
 
-        toDocumentReader(jr).readTry(
+        toDocumentReaderConv(jr).readTry(
           BSONDocument("ok" -> 1)) must beSuccessfulTry(1.2F) and {
             br1.readTry(BSONDocument("ok" -> 2)) must beSuccessfulTry(1.2F)
           } and {
@@ -162,7 +207,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
         implicit val bw = BSONDocumentWriter[Int](_ => BSONDocument("ok" -> 2))
         def jw: OWrites[Int] = bw
 
-        fromWriter(bw).writes(1) must_=== doc and {
+        fromWriterConv(bw).writes(1) must_=== doc and {
           jw.writes(2) must_=== doc
         }
       }
@@ -171,7 +216,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
         implicit val br = BSONDocumentReader[None.type](_ => None)
         def jr: Reads[None.type] = br
 
-        fromDocumentReader(br).
+        fromReaderConv(br).
           reads(Json.obj("ok" -> 1)) must beLike[JsResult[None.type]] {
             case JsSuccess(None, _) => jr.reads(Json.obj(
               "ok" -> 2)) must beLike[JsResult[None.type]] {
@@ -191,6 +236,18 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
           case JsSuccess((), _) => jh.writes({}) must_=== Json.obj("foo" -> 1L)
         }
       }
+    }
+
+    "resolve codecs" >> {
+      def spec[T <: BSONValue: Reads: Writes: Format] = ok
+
+      "for BSONDateTime" in spec[BSONDateTime]
+
+      "for BSONJavaScript" in spec[BSONJavaScript]
+
+      "for BSONObjectID" in spec[BSONObjectID]
+
+      "for BSONTimestamp" in spec[BSONTimestamp]
     }
   }
 }
@@ -254,4 +311,5 @@ object HandlerFixtures {
     jarr -> barr,
     jdoc -> bdoc)
 
+  case class Foo(bar: String)
 }

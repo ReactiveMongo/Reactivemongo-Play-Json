@@ -2,6 +2,8 @@ package reactivemongo.play.json
 
 import play.api.libs.json.{ JsObject, JsString, JsValue }
 
+import reactivemongo.api.bson.BSONObjectID
+
 /**
  * Implicit conversions for handler & value types between
  * `play.api.libs.json` and `reactivemongo.api.bson`.
@@ -112,6 +114,21 @@ package object compat extends PackageCompat
      */
     @inline def symbol(name: String): JsObject =
       JsObject(Map[String, JsValue](f"$$symbol" -> JsString(name.toString)))
+
+    /**
+     * Represents a object ID using [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax (v2).
+     *
+     * {{{
+     * import play.api.libs.json.Json
+     * import reactivemongo.api.bson.BSONObjectID
+     * import reactivemongo.play.json.compat.dsl.objectID
+     *
+     * Json.obj("field" -> objectID(BSONObjectID.generate()))
+     * // { "field": { "\$oid": "...binary repr" } }
+     * }}}
+     */
+    @inline def objectID(oid: BSONObjectID): JsObject =
+      JsObject(Map[String, JsValue](f"$$oid" -> JsString(oid.stringify)))
 
   }
 }

@@ -1,0 +1,201 @@
+version: 2.1
+
+commands:
+  setup_sbt:
+    description: Get and install SBT
+    parameters:
+      sbt_version:
+        type: string
+        default: "1.3.8"
+    steps:
+      - run:
+          name: Setup SBT
+          command: |
+                    if [ ! -x ~/sbt/bin/sbt ]; then
+                      cd ~/
+                      curl --silent -L -o sbt.tgz https://piccolo.link/sbt-<< parameters.sbt_version >>.tgz
+                      tar -xzvf sbt.tgz && rm -f sbt.tgz
+                    fi
+
+  build_n_tests:
+    description: Build & Run tests
+    steps:
+      - run:
+          name: Build & Run tests
+          command: |
+                    export PATH=$PATH:~/sbt/bin
+                    export USER=`basename $HOME`
+                    
+                    ./.ci_scripts/validate.sh
+
+  collect_test_reports:
+    description: Collect test reports
+    steps:
+      - run:
+          name: Collect test report
+          command: |
+                    mkdir test-reports
+                    find . -path '*/test-reports/*' -name '*.xml' \
+                      -print -exec cp {} test-reports \;
+
+jobs:
+  unit_play25:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      REACTIVEMONGO_SHADED: false
+      RELEASE_SUFFIX: play25
+      PLAY_VERSION: 2.5.11
+      SCALA_VERSION: 2.11.12
+    
+    steps:
+      - checkout
+
+      - setup_sbt
+
+      - restore_cache:
+          keys:
+          - play25-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+          - dependencies-
+
+      - build_n_tests
+
+      - save_cache:
+          paths:
+            - $HOME/.ivy2
+            - $HOME/.sbt
+            - $HOME/sbt
+          key: play25-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+
+      - collect_test_reports
+      - store_test_results:
+          path: test-reports
+
+  unit_play26:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      REACTIVEMONGO_SHADED: false
+      RELEASE_SUFFIX: play26
+      PLAY_VERSION: 2.6.7
+      SCALA_VERSION: 2.12.10
+    
+    steps:
+      - checkout
+
+      - setup_sbt
+
+      - restore_cache:
+          keys:
+          - play26-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+          - dependencies-
+
+      - build_n_tests
+
+      - save_cache:
+          paths:
+            - $HOME/.ivy2
+            - $HOME/.sbt
+            - $HOME/sbt
+          key: play26-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+
+      - collect_test_reports
+      - store_test_results:
+          path: test-reports
+
+  unit_play27:
+    docker:
+      - image: circleci/openjdk:9-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      REACTIVEMONGO_SHADED: false
+      RELEASE_SUFFIX: play27
+      PLAY_VERSION: 2.7.4
+      SCALA_VERSION: 2.13.1
+    
+    steps:
+      - checkout
+
+      - setup_sbt
+
+      - restore_cache:
+          keys:
+          - play27-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+          - dependencies-
+
+      - build_n_tests
+
+      - save_cache:
+          paths:
+            - $HOME/.ivy2
+            - $HOME/.sbt
+            - $HOME/sbt
+          key: play27-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+
+      - collect_test_reports
+      - store_test_results:
+          path: test-reports
+
+  unit_play28:
+    docker:
+      - image: circleci/openjdk:9-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      REACTIVEMONGO_SHADED: false
+      RELEASE_SUFFIX: play28
+      PLAY_VERSION: 2.8.0
+      SCALA_VERSION: 2.13.1
+    
+    steps:
+      - checkout
+
+      - setup_sbt
+
+      - restore_cache:
+          keys:
+          - play28-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+          - dependencies-
+
+      - build_n_tests
+
+      - save_cache:
+          paths:
+            - $HOME/.ivy2
+            - $HOME/.sbt
+            - $HOME/sbt
+          key: play28-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+
+      - collect_test_reports
+      - store_test_results:
+          path: test-reports
+
+workflows:
+  version: 2
+
+  play25:
+    jobs:
+      - unit_play25
+
+  play26:
+    jobs:
+      - unit_play26
+
+  play27:
+    jobs:
+      - unit_play27
+
+  play28:
+    jobs:
+      - unit_play28
+
+# TODO: Snapshot publish on master (nightly schedule?)
