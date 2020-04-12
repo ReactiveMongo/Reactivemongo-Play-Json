@@ -213,6 +213,18 @@ jobs:
           play_version: 2.8.1
           scala_versions: 2.12.10 2.13.1
 
+  trigger_dependent_builds:
+    docker:
+      - image: cimg/base:2020.01
+
+    working_directory: ~/repo
+
+    steps:
+      - run:
+          name: Trigger build @ Play-ReactiveMongo
+          command: |
+                    curl -X POST "https://circleci.com/api/v1.1/project/github/ReactiveMongo/Play-ReactiveMongo/build?circle-token=${CIRCLECI_TOKEN}"
+
 workflows:
   version: 2
 
@@ -222,6 +234,7 @@ workflows:
       - unit_play26
       - unit_play27
       - unit_play28
+
       - publish_snapshots:
           filters:
             branches:
@@ -232,3 +245,11 @@ workflows:
             - unit_play26
             - unit_play27
             - unit_play28
+
+      - trigger_dependent_builds:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - publish_snapshots
