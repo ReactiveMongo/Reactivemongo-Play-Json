@@ -223,7 +223,7 @@ jobs:
       - run:
           name: Trigger build @ Play-ReactiveMongo
           command: |
-                    curl -X POST "https://circleci.com/api/v1.1/project/github/ReactiveMongo/Play-ReactiveMongo/build?circle-token=${CIRCLECI_TOKEN}"
+                    curl -X POST "https://circleci.com/api/v1.1/project/github/ReactiveMongo/Play-ReactiveMongo/build?circle-token=${PLAY_REACTIVEMONGO_API_TOKEN}"
 
 workflows:
   version: 2
