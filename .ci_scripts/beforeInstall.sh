@@ -20,7 +20,7 @@ fi
 export PATH="$MONGO_HOME/bin:$PATH"
 
 # OpenSSL
-if [ ! -L "$HOME/ssl/lib/libssl.so.1.0.0" ] && [ ! -f "$HOME/ssl/lib/libssl.so.1.0.0" ]; then
+if [ ! -L "$HOME/ssl/lib/libssl.so.1.0.0" ] && [ ! -f "$HOME/ssl/lib/libcrypto.so.1.0.0" ]; then
   echo "[INFO] Building OpenSSL"
 
   cd /tmp

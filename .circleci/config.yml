@@ -45,7 +45,7 @@ commands:
       - save_cache:
           paths:
             - ~/sbt
-          key: tooling
+          key: tooling-{{ checksum "project/build.properties" }}
       - save_cache:
           paths:
             - ~/.ivy2
@@ -112,12 +112,12 @@ jobs:
     steps:
       - checkout
 
-      - setup_sbt
-
       - restore_cache:
           keys:
           - d-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
-          - tooling
+          - tooling-{{ checksum "project/build.properties" }}
+
+      - setup_sbt
 
       - build_n_tests
 
@@ -142,12 +142,12 @@ jobs:
     steps:
       - checkout
 
-      - setup_sbt
-
       - restore_cache:
           keys:
           - d-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
-          - tooling
+          - tooling-{{ checksum "project/build.properties" }}
+
+      - setup_sbt
 
       - build_n_tests
 
@@ -172,12 +172,12 @@ jobs:
     steps:
       - checkout
 
-      - setup_sbt
-
       - restore_cache:
           keys:
           - d-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
-          - tooling
+          - tooling-{{ checksum "project/build.properties" }}
+
+      - setup_sbt
 
       - build_n_tests
 
@@ -207,7 +207,9 @@ jobs:
       - restore_cache:
           keys:
           - d-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
-          - tooling
+          - tooling-{{ checksum "project/build.properties" }}
+
+      - setup_sbt
 
       - build_n_tests
 
@@ -226,11 +228,11 @@ jobs:
     steps:
       - checkout
 
-      - setup_sbt
-
       - restore_cache:
           keys:
-          - tooling
+          - tooling-{{ checksum "project/build.properties" }}
+
+      - setup_sbt
 
       - publish_snapshots:
           release_suffix: play25
