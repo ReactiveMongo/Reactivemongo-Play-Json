@@ -60,7 +60,7 @@ object HandlerConverters extends HandlerConverters {
  */
 trait HandlerConverters extends LowPriorityHandlerConverters1 {
   @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")
-  final val jsObjectWrites: OWrites[JsObject] =
+  implicit final val jsObjectWrites: OWrites[JsObject] =
     OWrites[JsObject](identity)
 
   /**

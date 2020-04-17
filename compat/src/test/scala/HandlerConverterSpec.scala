@@ -1,5 +1,7 @@
 package reactivemongo
 
+import com.github.ghik.silencer.silent
+
 import _root_.play.api.libs.json.{
   Format,
   JsNumber,
@@ -169,9 +171,9 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
         }
 
         "using compatibility conversion for JsObject" in {
-          val jw = implicitly[OWrites[JsObject]]
+          @silent def jw = implicitly[OWrites[JsObject]]
           val bw1: BSONDocumentWriter[JsObject] = jw
-          val bw2 = implicitly[BSONDocumentWriter[JsObject]]
+          @silent def bw2 = implicitly[BSONDocumentWriter[JsObject]]
 
           val jo = Json.obj("foo" -> 1)
           val bo = BSONDocument("foo" -> 1)
