@@ -4,6 +4,7 @@ import _root_.play.api.libs.json.{
   Format,
   JsNumber,
   Json,
+  JsObject,
   JsResult,
   JsSuccess,
   OFormat,
@@ -164,6 +165,19 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
             bw1.writeTry(1.1D) must beSuccessfulTry(doc)
           } and {
             bw2.writeTry(1.2D) must beSuccessfulTry(doc)
+          }
+        }
+
+        "using compatibility conversion for JsObject" in {
+          val jw = implicitly[OWrites[JsObject]]
+          val bw1: BSONDocumentWriter[JsObject] = jw
+          val bw2 = implicitly[BSONDocumentWriter[JsObject]]
+
+          val jo = Json.obj("foo" -> 1)
+          val bo = BSONDocument("foo" -> 1)
+
+          bw1.writeTry(jo) must beSuccessfulTry(bo) and {
+            bw2.writeTry(jo) must beSuccessfulTry(bo)
           }
         }
 

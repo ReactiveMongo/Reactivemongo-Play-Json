@@ -8,6 +8,7 @@ import scala.util.{ Failure, Success }
 import _root_.play.api.libs.json.{
   Format,
   JsError,
+  JsObject,
   JsSuccess,
   JsResultException,
   Json,
@@ -58,6 +59,10 @@ object HandlerConverters extends HandlerConverters {
  * ''Note:'' Logger `reactivemongo.api.play.json.HandlerConverters` can be used to debug.
  */
 trait HandlerConverters extends LowPriorityHandlerConverters1 {
+  @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")
+  final val jsObjectWrites: OWrites[JsObject] =
+    OWrites[JsObject](identity)
+
   /**
    * Implicit conversion from Play JSON `OFormat` to the BSON API.
    *

@@ -1,3 +1,4 @@
+# TODO: Use YAML anchor for avoid duplicating of cache keys
 version: 2.1
 
 commands:
