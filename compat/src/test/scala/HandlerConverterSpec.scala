@@ -221,10 +221,13 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
       "in writer" in {
         val doc = Json.obj("ok" -> 2)
         implicit val bw = BSONDocumentWriter[Int](_ => BSONDocument("ok" -> 2))
-        def jw: OWrites[Int] = bw
+        def jw1: OWrites[Int] = bw
+        def jw2 = implicitly[OWrites[Int]]
 
         fromWriterConv(bw).writes(1) must_=== doc and {
-          jw.writes(2) must_=== doc
+          jw1.writes(2) must_=== doc
+        } and {
+          jw2.writes(2) must_=== doc
         }
       }
 
@@ -254,7 +257,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
       }
     }
 
-    "resolve codecs" >> {
+    "resolve JSON codecs for BSON values" >> {
       def spec[T <: BSONValue: Reads: Writes: Format] = ok
 
       "for BSONDateTime" in spec[BSONDateTime]

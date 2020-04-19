@@ -177,8 +177,21 @@ private[json] sealed trait LowPriorityHandlerConverters2
     toReaderConv(r)
 
   /**
+   * Resolves a `OWrites` provided a BSON document writer is found.
+   *
    * {{{
-   * import reactivemongo.play.json.compat.HandlerConverters.fromDocumentWriter
+   * import play.api.libs.json.OWrites
+   * import reactivemongo.play.json.compat.HandlerConverters
+   *
+   * def bar[T: reactivemongo.api.bson.BSONDocumentWriter]: OWrites[T] =
+   *   HandlerConverters.fromDocumentWriter[T]
+   * }}}
+   */
+  implicit final def fromDocumentWriter[T](implicit w: BSONDocumentWriter[T]): OWrites[T] = fromDocumentWriterConv(w)
+
+  /**
+   * {{{
+   * import reactivemongo.play.json.compat.fromDocumentWriterConv
    *
    * def bar[T](lw: reactivemongo.api.bson.BSONDocumentWriter[T]) = {
    *   val w: play.api.libs.json.OWrites[T] = lw
@@ -186,7 +199,7 @@ private[json] sealed trait LowPriorityHandlerConverters2
    * }
    * }}}
    */
-  implicit final def fromDocumentWriter[T](w: BSONDocumentWriter[T]): OWrites[T] = OWrites[T] { t =>
+  implicit final def fromDocumentWriterConv[T](w: BSONDocumentWriter[T]): OWrites[T] = OWrites[T] { t =>
     w.writeTry(t) match {
       case Success(d) => ValueConverters.fromDocument(d)
       case Failure(e) => throw e
