@@ -33,13 +33,13 @@ object LaxHandlerConverters extends LaxHandlerConverters
 
 private[compat] trait LaxHandlerConverters {
   /**
-   * Writes a [[BSONDateTime]] as a JSON number.
+   * Writes a `BSONDateTime` as a JSON number.
    */
   implicit val dateTimeWrites: Writes[BSONDateTime] =
     Writes[BSONDateTime] { dt => JsNumber(dt.value) }
 
   /**
-   * Reads a [[BSONDateTime]] from a JSON number.
+   * Reads a `BSONDateTime` from a JSON number.
    */
   implicit val dateTimerReads: Reads[BSONDateTime] =
     Reads[BSONDateTime] {
@@ -47,13 +47,13 @@ private[compat] trait LaxHandlerConverters {
     }
 
   /**
-   * Writes a [[BSONJavaScript]] as a JSON string.
+   * Writes a `BSONJavaScript` as a JSON string.
    */
   implicit val javaScriptWrites: Writes[BSONJavaScript] =
     Writes[BSONJavaScript] { js => JsString(js.value) }
 
   /**
-   * Reads a [[BSONJavaScript]] from a JSON string.
+   * Reads a `BSONJavaScript` from a JSON string.
    */
   implicit val javaScriptReads: Reads[BSONJavaScript] =
     Reads[BSONJavaScript] {
@@ -61,13 +61,13 @@ private[compat] trait LaxHandlerConverters {
     }
 
   /**
-   * Writes a [[BSONObjectID]] as a JSON string.
+   * Writes a `BSONObjectID` as a JSON string.
    */
   implicit val objectIdWrites: Writes[BSONObjectID] =
     Writes[BSONObjectID] { oid => JsString(oid.stringify) }
 
   /**
-   * Reads a [[BSONObjectID]] from a JSON string.
+   * Reads a `BSONObjectID` from a JSON string.
    */
   implicit val objectIdReads: Reads[BSONObjectID] =
     Reads[BSONObjectID] {
@@ -83,13 +83,13 @@ private[compat] trait LaxHandlerConverters {
     }
 
   /**
-   * Writes a [[BSONSymbol]] as a JSON string.
+   * Writes a `BSONSymbol` as a JSON string.
    */
   implicit val symbolWrites: Writes[BSONSymbol] =
     Writes[BSONSymbol] { js => JsString(js.value) }
 
   /**
-   * Reads a [[BSONSymbol]] from a JSON string.
+   * Reads a `BSONSymbol` from a JSON string.
    */
   implicit val symbolReads: Reads[BSONSymbol] =
     Reads[BSONSymbol] {
@@ -97,13 +97,13 @@ private[compat] trait LaxHandlerConverters {
     }
 
   /**
-   * Writes a [[BSONTimestamp]] as a JSON number.
+   * Writes a `BSONTimestamp` as a JSON number.
    */
   implicit val timestampLaxWrites: Writes[BSONTimestamp] =
     Writes[BSONTimestamp] { ts => JsNumber(ts.value) }
 
   /**
-   * Reads a [[BSONTimestamp]] from a JSON number.
+   * Reads a `BSONTimestamp` from a JSON number.
    */
   implicit val timestampLaxReads: Reads[BSONTimestamp] =
     Reads[BSONTimestamp] {
