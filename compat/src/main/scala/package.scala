@@ -6,7 +6,8 @@ import reactivemongo.api.bson.BSONObjectID
 
 /**
  * Implicit conversions for handler & value types between
- * `play.api.libs.json` and `reactivemongo.api.bson`.
+ * `play.api.libs.json` and `reactivemongo.api.bson`,
+ * by default using the [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax (v2).
  *
  * {{{
  * import play.api.libs.json.JsValue
@@ -131,4 +132,16 @@ package object compat extends PackageCompat
       JsObject(Map[String, JsValue](f"$$oid" -> JsString(oid.stringify)))
 
   }
+
+  /**
+   * {{{
+   * import play.api.libs.json._
+   * import reactivemongo.api.bson._
+   * import reactivemongo.play.json.compat.lax._
+   *
+   * Json.obj("_id" -> BSONObjectID.generate()) // objectIdWrites
+   * // { "_id": "as_string_instead_of_ObjectId" }
+   * }}}
+   */
+  object lax extends LaxHandlerConverters
 }

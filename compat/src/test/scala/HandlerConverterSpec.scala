@@ -251,8 +251,8 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
 
         val jh: OFormat[Unit] = bh
 
-        jh.reads(Json.obj("ok" -> 1)) must beLike[JsResult[Unit]] {
-          case JsSuccess((), _) => jh.writes({}) must_=== Json.obj("foo" -> 1L)
+        jh.reads(Json.obj("ok" -> 1)) must_=== JsSuccess({}) and {
+          jh.writes({}) must_=== Json.obj("foo" -> 1L)
         }
       }
     }
@@ -267,6 +267,39 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
       "for BSONObjectID" in spec[BSONObjectID]
 
       "for BSONTimestamp" in spec[BSONTimestamp]
+    }
+
+    "convert in lax mode" >> {
+      import lax._
+
+      "for BSONDateTime" in {
+        Json.toJson(ExtendedJsonFixtures.bdt).
+          validate[BSONDateTime] must_=== JsSuccess(ExtendedJsonFixtures.bdt)
+      }
+
+      "for BSONJavaScript" in {
+        val bjs = BSONJavaScript("foo")
+
+        Json.toJson(bjs).validate[BSONJavaScript] must_=== JsSuccess(bjs)
+      }
+
+      "for BSONObjectID" in {
+        Json.toJson(ExtendedJsonFixtures.boid).
+          validate[BSONObjectID] must_=== JsSuccess(ExtendedJsonFixtures.boid)
+      }
+
+      "for BSONSymbol" in {
+        import reactivemongo.api.bson.BSONSymbol
+
+        val bsy = BSONSymbol("foo")
+
+        Json.toJson(bsy).validate[BSONSymbol] must_=== JsSuccess(bsy)
+      }
+
+      "for BSONTimestamp" in {
+        Json.toJson(ExtendedJsonFixtures.bts).
+          validate[BSONTimestamp] must_=== JsSuccess(ExtendedJsonFixtures.bts)
+      }
     }
   }
 }

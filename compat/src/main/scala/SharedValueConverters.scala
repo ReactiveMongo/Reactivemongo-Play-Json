@@ -317,7 +317,7 @@ private[json] trait SharedValueConverters
     @SuppressWarnings(Array("LooksLikeInterpolatedString"))
     def unapply(obj: JsObject): Option[BSONDateTime] =
       (obj \ f"$$date").toOption.flatMap {
-        case JsString(repr) => try { // TODO: Support JsNumber (back compat)
+        case JsString(repr) => try {
           val dt = ZonedDateTime.parse(repr, DateTimeFormatter.ISO_DATE_TIME)
 
           Some(BSONDateTime(dt.toInstant.toEpochMilli))

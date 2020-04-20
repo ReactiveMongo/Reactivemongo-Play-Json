@@ -59,6 +59,7 @@ object HandlerConverters extends HandlerConverters {
  * ''Note:'' Logger `reactivemongo.api.play.json.HandlerConverters` can be used to debug.
  */
 trait HandlerConverters extends LowPriorityHandlerConverters1 {
+
   @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")
   implicit final val jsObjectWrites: OWrites[JsObject] =
     OWrites[JsObject](identity)
@@ -225,15 +226,15 @@ private[json] sealed trait LowPriorityHandlerConverters3 {
    *   toDocumentReaderConv(jr)
    * }}}
    */
-  final def toDocumentReaderConv[T](r: Reads[T]): BSONDocumentReader[T] =
-    BSONDocumentReader.from[T] { bson =>
-      r.reads(ValueConverters fromDocument bson) match {
-        case JsSuccess(result, _) => Success(result)
+  implicit final def toDocumentReaderConv[T](
+    r: Reads[T]): BSONDocumentReader[T] = BSONDocumentReader.from[T] { bson =>
+    r.reads(ValueConverters fromDocument bson) match {
+      case JsSuccess(result, _) => Success(result)
 
-        case JsError(details) =>
-          Failure(JsResultException(details))
-      }
+      case JsError(details) =>
+        Failure(JsResultException(details))
     }
+  }
 
   implicit final def fromWriterConv[T](w: BSONWriter[T]): Writes[T] =
     SafeBSONWriter.unapply(w) match {
