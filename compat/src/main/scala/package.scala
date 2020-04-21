@@ -7,7 +7,7 @@ import reactivemongo.api.bson.BSONObjectID
 /**
  * Implicit conversions for handler & value types between
  * `play.api.libs.json` and `reactivemongo.api.bson`,
- * by default using the [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax (v2).
+ * by default using the [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax.
  *
  * {{{
  * import play.api.libs.json.JsValue
@@ -132,6 +132,32 @@ package object compat extends PackageCompat
       JsObject(Map[String, JsValue](f"$$oid" -> JsString(oid.stringify)))
 
   }
+
+  /**
+   * @define syntaxDocBaseUrl https://docs.mongodb.com/manual/reference/mongodb-extended-json
+   * @define specsUrl https://github.com/mongodb/specifications/blob/master/source/extended-json.rst
+   *
+   * Implicit conversions for value types between
+   * `play.api.libs.json` and `reactivemongo.api.bson`,
+   * using [[$syntaxDocBaseUrl MongoDB Extended JSON]] syntax (v2).
+   *
+   * {{{
+   * import play.api.libs.json.JsValue
+   * import reactivemongo.api.bson.BSONValue
+   * import reactivemongo.play.json.compat.ExtendedJsonConverters._
+   *
+   * def foo(v: BSONValue): JsValue =
+   *   implicitly[JsValue](v) // ExtendedJsonConverters.fromValue
+   *
+   * def bar(v: JsValue): BSONValue =
+   *   implicitly[BSONValue](v) // ExtendedJsonConverters.toValue
+   * }}}
+   *
+   * ''Note:'' Logger `reactivemongo.api.play.json.ValueConverters` can be used to debug.
+   *
+   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table specifications]].
+   */
+  object extended extends ExtendedJsonConverters
 
   /**
    * {{{

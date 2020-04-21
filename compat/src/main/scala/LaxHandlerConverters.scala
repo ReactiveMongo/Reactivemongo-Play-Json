@@ -30,6 +30,7 @@ import reactivemongo.api.bson.{
  * }}}
  */
 object LaxHandlerConverters extends LaxHandlerConverters
+// TODO: Remove with ToFromValue
 
 private[compat] trait LaxHandlerConverters {
   /**

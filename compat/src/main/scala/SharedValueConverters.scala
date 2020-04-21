@@ -21,7 +21,6 @@ import _root_.play.api.libs.json.{
 }
 
 import reactivemongo.api.bson.{
-  BSONArray,
   BSONBinary,
   BSONBoolean,
   BSONDateTime,
@@ -38,7 +37,6 @@ import reactivemongo.api.bson.{
   BSONObjectID,
   BSONSymbol,
   BSONRegex,
-  BSONString,
   BSONTimestamp,
   BSONUndefined,
   BSONValue,
@@ -51,19 +49,6 @@ private[json] trait SharedValueConverters
 
   import ValueConverters.logger
 
-  implicit def fromArray(bson: BSONArray): JsArray =
-    JsArray(bson.values.map(self.fromValue))
-
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Binary syntax]]:
-   *
-   * `{ "\$binary":
-   *    {
-   *       "base64": "<payload>",
-   *       "subType": "<t>"
-   *    }
-   * }`
-   */
   implicit final def fromBinary(bin: BSONBinary): JsObject =
     JsObject(Map[String, JsValue](
       f"$$binary" -> JsObject(Map[String, JsValue](
@@ -74,88 +59,27 @@ private[json] trait SharedValueConverters
   implicit final def fromBoolean(bson: BSONBoolean): JsBoolean =
     if (bson.value) JsTrue else JsFalse
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Date syntax]]:
-   *
-   * `{ "\$date": { "\$numberLong": "<millis>" } }`
-   */
   implicit final def fromDateTime(bson: BSONDateTime): JsObject =
     JsObject(Map[String, JsValue](f"$$date" -> dsl.long(bson.value)))
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Decimal128 syntax]]:
-   *
-   * `{ "\$numberDecimal": "<number>" }`
-   */
   implicit final def fromDecimal(bson: BSONDecimal): JsObject =
     JsObject(Map[String, JsValue](
       f"$$numberDecimal" -> JsString(bson.toString)))
 
-  /** Converts to a JSON object */
   implicit def fromDocument(bson: BSONDocument): JsObject =
     JsObject(bson.elements.map(elem => elem.name -> fromValue(elem.value)))
 
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$code": "<javascript>" }`
-   */
   implicit final def fromJavaScript(bson: BSONJavaScript): JsObject =
     JsObject(Map[String, JsValue](f"$$code" -> JsString(bson.value)))
 
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{
-   *   "\$code": "<javascript>",
-   *   "\$scope": { }
-   * }`
-   */
   implicit final def fromJavaScriptWS(bson: BSONJavaScriptWS): JsObject =
     JsObject(Map[String, JsValue](
       f"$$code" -> JsString(bson.value),
       f"$$scope" -> fromDocument(bson.scope)))
 
-  private[reactivemongo] val JsMaxKey =
-    JsObject(Map[String, JsValue](f"$$maxKey" -> JsNumber(1)))
-
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$maxKey": 1 }`
-   */
-  implicit final val fromMaxKey: BSONMaxKey => JsObject = _ => JsMaxKey
-
-  private[reactivemongo] val JsMinKey =
-    JsObject(Map[String, JsValue](f"$$minKey" -> JsNumber(1)))
-
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$minKey": 1 }`
-   */
-  implicit final val fromMinKey: BSONMinKey => JsObject = _ => JsMinKey
-
-  implicit val fromNull: BSONNull => JsNull.type = _ => JsNull
-
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.ObjectId syntax]]:
-   *
-   * `{ "\$oid": "<ObjectId bytes>" }`
-   */
   implicit final def fromObjectID(bson: BSONObjectID): JsObject =
     dsl.objectID(bson)
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Regular-Expression syntax]]:
-   *
-   * `{ "\$regularExpression":
-   *    {
-   *       "pattern": "<regexPattern>",
-   *       "options": "<options>"
-   *   }
-   * }`
-   */
   implicit final def fromRegex(rx: BSONRegex): JsObject = {
     val builder = scala.collection.mutable.Map.empty[String, JsValue]
 
@@ -169,51 +93,16 @@ private[json] trait SharedValueConverters
       f"$$regularExpression" -> JsObject(builder.toMap)))
   }
 
-  implicit final def fromStr(bson: BSONString): JsString = JsString(bson.value)
-
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$symbol": "<name>" }`
-   */
   implicit final def fromSymbol(bson: BSONSymbol): JsObject =
     JsObject(Map[String, JsValue](f"$$symbol" -> JsString(bson.value)))
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Timestamp syntax]]:
-   *
-   * `{ "\$timestamp": {"t": <t>, "i": <i>} }`
-   */
   implicit final def fromTimestamp(ts: BSONTimestamp): JsObject =
     JsObject(Map[String, JsValue](
       f"$$timestamp" -> JsObject(Map[String, JsValue](
         "t" -> JsNumber(ts.time), "i" -> JsNumber(ts.ordinal)))))
 
-  private[reactivemongo] val JsUndefined =
-    JsObject(Map[String, JsValue](f"$$undefined" -> JsTrue))
-
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$undefined": true }`
-   */
-  implicit final val fromUndefined: BSONUndefined => JsObject = _ => JsUndefined
-
   // ---
 
-  implicit final def toArray(js: JsArray): BSONArray =
-    BSONArray(js.value.map(toValue))
-
-  implicit final def toBoolean(js: JsBoolean): BSONBoolean =
-    BSONBoolean(js.value)
-
-  /**
-   * If the number:
-   *
-   * - is not whole then it's converted to BSON double,
-   * - is a valid integer then it's converted to a BSON integer (int32),
-   * - otherwise it's converted to a BSON long integer (int64).
-   */
   implicit final def toNumber(js: JsNumber): BSONValue = {
     val v = js.value
 
@@ -226,20 +115,8 @@ private[json] trait SharedValueConverters
     }
   }
 
-  implicit val toNull: JsNull.type => BSONNull =
-    _ => BSONNull
-
-  implicit final def toStr(js: JsString): BSONValue = {
-    if (js.value == null) BSONNull
-    else BSONString(js.value)
-  }
-
   // ---
 
-  /**
-   * First checks whether an explicit type (e.g. `\$binary`) is specified,
-   * otherwise converts to a BSON document.
-   */
   implicit final def fromObject(js: JsObject): BSONValue = js match {
     case BinaryObject(bin) => bin
     case DateObject(date) => date
@@ -262,13 +139,13 @@ private[json] trait SharedValueConverters
   }
 
   /** See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table syntax]] */
-  object JavaScriptObject {
+  private[json] object JavaScriptObject {
     def unapply(obj: JsObject): Option[BSONJavaScript] =
       (obj \ f"$$code").asOpt[String].map(BSONJavaScript(_))
   }
 
   /** See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table syntax]] */
-  object JavaScriptWSObject {
+  private[json] object JavaScriptWSObject {
     def unapply(obj: JsObject): Option[BSONJavaScriptWS] = for {
       scope <- (obj \ f"$$scope").toOption.collect {
         case obj @ JsObject(_) => toDocument(obj)
@@ -518,7 +395,6 @@ private[json] trait SharedValueConverters
 private[compat] sealed trait SharedValueConvertersLowPriority1 {
   _: SharedValueConverters =>
 
-  /** See [[toValue]] */
   implicit final def toDocument(js: JsObject): BSONDocument =
     BSONDocument(js.fields.map {
       case (nme, v) => nme -> toValue(v)

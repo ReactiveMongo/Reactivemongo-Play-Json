@@ -34,25 +34,14 @@ import reactivemongo.api.bson.{
  * Implicit conversions for value types between
  * `play.api.libs.json` and `reactivemongo.api.bson`,
  * using [[$syntaxDocBaseUrl MongoDB Extended JSON]] syntax (v2).
- *
- * {{{
- * import play.api.libs.json.JsValue
- * import reactivemongo.api.bson.BSONValue
- * import reactivemongo.play.json.compat.ExtendedJsonConverters._
- *
- * def foo(v: BSONValue): JsValue =
- *   implicitly[JsValue](v) // ExtendedJsonConverters.fromValue
- *
- * def bar(v: JsValue): BSONValue =
- *   implicitly[BSONValue](v) // ExtendedJsonConverters.toValue
- * }}}
- *
- * ''Note:'' Logger `reactivemongo.api.play.json.ValueConverters` can be used to debug.
- *
- * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table specifications]].
  */
-object ExtendedJsonConverters extends ExtendedJsonCompat
+object ExtendedJsonConverters extends ExtendedJsonConverters
+
+private[json] trait ExtendedJsonConverters
+  extends FromToValue with ExtendedJsonCompat
   with SharedValueConverters with LowPriority1ExtendedJson {
+
+  final override type JsonNumber = JsObject
 
   /**
    * See [[$syntaxDocBaseUrl/#bson.Double syntax]];
@@ -82,7 +71,7 @@ object ExtendedJsonConverters extends ExtendedJsonCompat
 }
 
 private[json] sealed trait LowPriority1ExtendedJson {
-  _: ExtendedJsonConverters.type =>
+  _: ExtendedJsonConverters =>
 
   implicit final def fromValue(bson: BSONValue): JsValue = bson match {
     case arr: BSONArray => fromArray(arr)
