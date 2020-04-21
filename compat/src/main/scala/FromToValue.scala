@@ -37,7 +37,7 @@ import reactivemongo.api.bson.{
   BSONValue
 }
 
-trait FromToValue extends FromValue with ToValue
+private[json] trait FromToValue extends FromValue with ToValue
 
 /** Conversion API from BSON to JSON values */
 sealed trait FromValue {
@@ -177,6 +177,10 @@ sealed trait FromValue {
   def fromObject(js: JsObject): BSONValue
 }
 
+object FromValue {
+  @inline implicit def defaultFromValue: FromValue = ValueConverters
+}
+
 /** Conversion API from BSON to JSON values */
 sealed trait ToValue {
   implicit final def toJsValueWrapper[T <: BSONValue](value: T): Json.JsValueWrapper = implicitly[Json.JsValueWrapper](fromValue(value))
@@ -207,4 +211,8 @@ sealed trait ToValue {
   def toDocument(js: JsObject): BSONDocument
 
   def toValue(js: JsValue): BSONValue
+}
+
+object ToValue {
+  @inline implicit def defaultToValue: ToValue = ValueConverters
 }
