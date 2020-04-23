@@ -1,6 +1,6 @@
 package reactivemongo.play.json
 
-import play.api.libs.json.{ JsObject, JsString, JsValue }
+import play.api.libs.json.{ JsObject, JsString, JsValue, OWrites }
 
 import reactivemongo.api.bson.BSONObjectID
 
@@ -20,8 +20,48 @@ import reactivemongo.api.bson.BSONObjectID
  *
  * For more specific imports, see [[ValueConverters]] and [[HandlerConverters]].
  */
-package object compat extends PackageCompat
-  with ValueConverters with HandlerConverters {
+package object compat extends PackageCompat with ValueConverters {
+  @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")
+  implicit final val jsObjectWrites: OWrites[JsObject] =
+    OWrites[JsObject](identity)
+
+  /**
+   * Implicit conversions for handler types
+   * from `play.api.libs.json` to `reactivemongo.api.bson` .
+   *
+   * {{{
+   * import reactivemongo.play.json.compat.json2bson._
+   *
+   * def foo[T](jw: play.api.libs.json.OWrites[T]) = {
+   *   val w: reactivemongo.api.bson.BSONDocumentWriter[T] = jw
+   *   w
+   * }
+   * }}}
+   *
+   * '''Note:''' Importing both `json2bson` & `bson2json`
+   * can lead to diverging implicits in Scala 2.11
+   *  (see `HandlerConverterSpec211`).
+   */
+  object json2bson extends Json2BsonConverters
+
+  /**
+   * Implicit conversions for handler types
+   * from `reactivemongo.api.bson` to `play.api.libs.json` .
+   *
+   * {{{
+   * import reactivemongo.play.json.compat.bson2json._
+   *
+   * def bar[T](br: reactivemongo.api.bson.BSONReader[T]) = {
+   *   val r: play.api.libs.json.Reads[T] = br
+   *   r
+   * }
+   * }}}
+   *
+   * '''Note:''' Importing both `json2bson` & `bson2json`
+   * can lead to diverging implicits in Scala 2.11
+   *  (see `HandlerConverterSpec211`).
+   */
+  object bson2json extends Bson2JsonConverters
 
   /**
    * DSL for [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax (v2).
@@ -144,7 +184,7 @@ package object compat extends PackageCompat
    * {{{
    * import play.api.libs.json.JsValue
    * import reactivemongo.api.bson.BSONValue
-   * import reactivemongo.play.json.compat.ExtendedJsonConverters._
+   * import reactivemongo.play.json.compat.extended._
    *
    * def foo(v: BSONValue): JsValue =
    *   implicitly[JsValue](v) // ExtendedJsonConverters.fromValue
@@ -157,7 +197,12 @@ package object compat extends PackageCompat
    *
    * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst#conversion-table specifications]].
    */
-  object extended extends ExtendedJsonConverters
+  object extended extends ExtendedJsonConverters { converters =>
+    @inline implicit def fromValue: FromValue = converters
+    @inline implicit def toValue: ToValue = converters
+
+    override def toString = "extended"
+  }
 
   /**
    * {{{
@@ -169,5 +214,14 @@ package object compat extends PackageCompat
    * // { "_id": "as_string_instead_of_ObjectId" }
    * }}}
    */
-  object lax extends LaxHandlerConverters
+  object lax extends LaxValueConverters
+    with LaxHandlerWorkarounds { converters =>
+
+    @inline implicit def fromValue: FromValue = converters
+    @inline implicit def toValue: ToValue = converters
+
+    override def toString = "lax"
+  }
+
+  override def toString = "compat"
 }

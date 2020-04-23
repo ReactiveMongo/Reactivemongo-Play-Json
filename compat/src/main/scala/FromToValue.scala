@@ -53,26 +53,14 @@ sealed trait FromValue {
   implicit final def fromArray(bson: BSONArray): JsArray =
     JsArray(bson.values.map(fromValue))
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Binary syntax]]:
-   *
-   * `{ "\$binary":
-   *    {
-   *       "base64": "<payload>",
-   *       "subType": "<t>"
-   *    }
-   * }`
-   */
   def fromBinary(bin: BSONBinary): JsObject
 
   def fromBoolean(bson: BSONBoolean): JsBoolean
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Date syntax]]:
-   *
-   * `{ "\$date": { "\$numberLong": "<millis>" } }`
-   */
-  def fromDateTime(bson: BSONDateTime): JsObject
+  /** JSON representation for temporal types */
+  type JsonTime <: JsValue
+
+  def fromDateTime(bson: BSONDateTime): JsonTime
 
   /**
    * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Decimal128 syntax]]:
@@ -82,23 +70,12 @@ sealed trait FromValue {
   def fromDecimal(bson: BSONDecimal): JsObject
 
   /** Converts to a JSON object */
-  def fromDocument(bson: BSONDocument): JsObject
+  def fromDocument(bson: BSONDocument)(implicit conv: FromValue): JsObject
 
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$code": "<javascript>" }`
-   */
-  def fromJavaScript(bson: BSONJavaScript): JsObject
+  type JsonJavaScript <: JsValue
 
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{
-   *   "\$code": "<javascript>",
-   *   "\$scope": { }
-   * }`
-   */
+  def fromJavaScript(bson: BSONJavaScript): JsonJavaScript
+
   def fromJavaScriptWS(bson: BSONJavaScriptWS): JsObject
 
   private[reactivemongo] val JsMaxKey =
@@ -123,40 +100,19 @@ sealed trait FromValue {
 
   implicit val fromNull: BSONNull => JsNull.type = _ => JsNull
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.ObjectId syntax]]:
-   *
-   * `{ "\$oid": "<ObjectId bytes>" }`
-   */
-  def fromObjectID(bson: BSONObjectID): JsObject
+  type JsonObjectID <: JsValue
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Regular-Expression syntax]]:
-   *
-   * `{ "\$regularExpression":
-   *    {
-   *       "pattern": "<regexPattern>",
-   *       "options": "<options>"
-   *   }
-   * }`
-   */
+  def fromObjectID(bson: BSONObjectID): JsonObjectID
+
   def fromRegex(rx: BSONRegex): JsObject
 
   implicit final def fromStr(bson: BSONString): JsString = JsString(bson.value)
 
-  /**
-   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
-   *
-   * `{ "\$symbol": "<name>" }`
-   */
-  def fromSymbol(bson: BSONSymbol): JsObject
+  type JsonSymbol <: JsValue
 
-  /**
-   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Timestamp syntax]]:
-   *
-   * `{ "\$timestamp": {"t": <t>, "i": <i>} }`
-   */
-  def fromTimestamp(ts: BSONTimestamp): JsObject
+  def fromSymbol(bson: BSONSymbol): JsonSymbol
+
+  def fromTimestamp(ts: BSONTimestamp): JsonTime
 
   private[reactivemongo] val JsUndefined =
     JsObject(Map[String, JsValue](f"$$undefined" -> JsTrue))
@@ -169,6 +125,39 @@ sealed trait FromValue {
   implicit final val fromUndefined: BSONUndefined => JsObject = _ => JsUndefined
 
   def fromValue(bson: BSONValue): JsValue
+
+  final protected def jsonValue(bson: BSONValue)(
+    implicit
+    conv: FromValue): JsValue = bson match {
+    case arr: BSONArray => conv.fromArray(arr)
+    case bin: BSONBinary => conv.fromBinary(bin)
+
+    case BSONBoolean(true) => JsTrue
+    case BSONBoolean(_) => JsFalse
+
+    case dt: BSONDateTime => conv.fromDateTime(dt)
+    case dec: BSONDecimal => conv.fromDecimal(dec)
+    case doc: BSONDocument => conv.fromDocument(doc)
+    case d: BSONDouble => conv.fromDouble(d)
+    case i: BSONInteger => conv.fromInteger(i)
+
+    case js: BSONJavaScript => conv.fromJavaScript(js)
+    case jsw: BSONJavaScriptWS => conv.fromJavaScriptWS(jsw)
+
+    case l: BSONLong => conv.fromLong(l)
+
+    case BSONMaxKey => JsMaxKey
+    case BSONMinKey => JsMinKey
+    case BSONNull => JsNull
+
+    case oid: BSONObjectID => conv.fromObjectID(oid)
+    case re: BSONRegex => conv.fromRegex(re)
+    case str: BSONString => conv.fromStr(str)
+    case sym: BSONSymbol => conv.fromSymbol(sym)
+    case ts: BSONTimestamp => conv.fromTimestamp(ts)
+
+    case _ => JsUndefined
+  }
 
   /**
    * First checks whether an explicit type (e.g. `\$binary`) is specified,

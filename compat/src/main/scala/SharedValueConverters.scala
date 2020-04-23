@@ -45,10 +45,20 @@ import reactivemongo.api.bson.{
 }
 
 private[json] trait SharedValueConverters
-  extends SharedValueConvertersLowPriority1 { self =>
+  extends SharedValueConvertersLowPriority1 {
 
   import ValueConverters.logger
 
+  /**
+   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Binary syntax]]:
+   *
+   * `{ "\$binary":
+   *    {
+   *       "base64": "<payload>",
+   *       "subType": "<t>"
+   *    }
+   * }`
+   */
   implicit final def fromBinary(bin: BSONBinary): JsObject =
     JsObject(Map[String, JsValue](
       f"$$binary" -> JsObject(Map[String, JsValue](
@@ -59,27 +69,38 @@ private[json] trait SharedValueConverters
   implicit final def fromBoolean(bson: BSONBoolean): JsBoolean =
     if (bson.value) JsTrue else JsFalse
 
-  implicit final def fromDateTime(bson: BSONDateTime): JsObject =
-    JsObject(Map[String, JsValue](f"$$date" -> dsl.long(bson.value)))
-
   implicit final def fromDecimal(bson: BSONDecimal): JsObject =
     JsObject(Map[String, JsValue](
       f"$$numberDecimal" -> JsString(bson.toString)))
 
-  implicit def fromDocument(bson: BSONDocument): JsObject =
-    JsObject(bson.elements.map(elem => elem.name -> fromValue(elem.value)))
+  implicit def fromDocument(bson: BSONDocument)(implicit conv: FromValue): JsObject = JsObject(bson.elements.map(elem => elem.name -> conv.fromValue(elem.value)))
 
-  implicit final def fromJavaScript(bson: BSONJavaScript): JsObject =
+  protected final def jsonJavaScript(bson: BSONJavaScript): JsObject =
     JsObject(Map[String, JsValue](f"$$code" -> JsString(bson.value)))
 
+  /**
+   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
+   *
+   * `{
+   *   "\$code": "<javascript>",
+   *   "\$scope": { }
+   * }`
+   */
   implicit final def fromJavaScriptWS(bson: BSONJavaScriptWS): JsObject =
     JsObject(Map[String, JsValue](
       f"$$code" -> JsString(bson.value),
       f"$$scope" -> fromDocument(bson.scope)))
 
-  implicit final def fromObjectID(bson: BSONObjectID): JsObject =
-    dsl.objectID(bson)
-
+  /**
+   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Regular-Expression syntax]]:
+   *
+   * `{ "\$regularExpression":
+   *    {
+   *       "pattern": "<regexPattern>",
+   *       "options": "<options>"
+   *   }
+   * }`
+   */
   implicit final def fromRegex(rx: BSONRegex): JsObject = {
     val builder = scala.collection.mutable.Map.empty[String, JsValue]
 
@@ -92,14 +113,6 @@ private[json] trait SharedValueConverters
     JsObject(Map[String, JsValue](
       f"$$regularExpression" -> JsObject(builder.toMap)))
   }
-
-  implicit final def fromSymbol(bson: BSONSymbol): JsObject =
-    JsObject(Map[String, JsValue](f"$$symbol" -> JsString(bson.value)))
-
-  implicit final def fromTimestamp(ts: BSONTimestamp): JsObject =
-    JsObject(Map[String, JsValue](
-      f"$$timestamp" -> JsObject(Map[String, JsValue](
-        "t" -> JsNumber(ts.time), "i" -> JsNumber(ts.ordinal)))))
 
   // ---
 
@@ -415,4 +428,26 @@ private[compat] sealed trait SharedValueConvertersLowPriority1 {
   }
 
   def fromValue(bson: BSONValue): JsValue
+}
+
+private[compat] trait TemporalObjectConverters { _: FromValue =>
+  type JsonTime = JsObject
+
+  /**
+   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Date syntax]]:
+   *
+   * `{ "\$date": { "\$numberLong": "<millis>" } }`
+   */
+  implicit def fromDateTime(bson: BSONDateTime): JsObject =
+    JsObject(Map[String, JsValue](f"$$date" -> dsl.long(bson.value)))
+
+  /**
+   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Timestamp syntax]]:
+   *
+   * `{ "\$timestamp": {"t": <t>, "i": <i>} }`
+   */
+  implicit def fromTimestamp(ts: BSONTimestamp): JsObject =
+    JsObject(Map[String, JsValue](
+      f"$$timestamp" -> JsObject(Map[String, JsValue](
+        "t" -> JsNumber(ts.time), "i" -> JsNumber(ts.ordinal)))))
 }
