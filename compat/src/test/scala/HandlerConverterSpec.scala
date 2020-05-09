@@ -57,16 +57,15 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
         "for BSONLong" in {
           implicit val jr = Reads[Long] { _ => JsSuccess(1L) }
           def bvr: BSONReader[Long] = jr
-          //def bdr: BSONDocumentReader[Long] = jr
+          def bdr: BSONDocumentReader[Long] = jr
 
           toReaderConv(jr).readTry(BSONLong(2L)) must beSuccessfulTry(1L) and {
             bvr.readTry(BSONLong(3L)) must beSuccessfulTry(1L)
           } and {
             bvr.readTry(dsl.long(4L)) must beSuccessfulTry(1L)
           } and {
-            //bdr.readTry(BSONDocument(
-            //f"$$numberLong" -> 1)) must beSuccessfulTry(1L)
-            ok
+            bdr.readTry(BSONDocument(
+              f"$$numberLong" -> 1)) must beSuccessfulTry(1L)
           }
         }
 

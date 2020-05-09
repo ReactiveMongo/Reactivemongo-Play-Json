@@ -24,6 +24,7 @@ import reactivemongo.api.bson.{
   BSONHandler,
   BSONReader,
   BSONWriter,
+  DocumentClass,
   SafeBSONWriter,
   exceptions
 }
@@ -149,19 +150,13 @@ private[compat] sealed trait LowPriority2Json2BsonConverters
   }
 
   /**
-   * Provided there is a Play JSON `Reads`, resolve a BSON reader.
-   *
-   * {{{
-   * import play.api.libs.json.Reads
-   * import reactivemongo.api.bson.BSONReader
-   * import reactivemongo.play.json.compat.json2bson.toReader
-   *
-   * def foo[T: Reads]: BSONReader[T] = implicitly[BSONReader[T]]
-   * }}}
-   *
-   * @see [[toDocumentWriterConv]]
+   * Implicitly provides a BSON document reader if `T` is a case class,
+   * or a sealed trait (see `DocumentClass`).
    */
-  implicit final def toReader[T](implicit r: Reads[T], conv: FromValue): BSONReader[T] = toReaderConv(r)
+  implicit final def toDocumentReader[T: DocumentClass](
+    implicit
+    r: Reads[T], conv: FromValue): BSONDocumentReader[T] =
+    toDocumentReaderConv[T](r)
 
 }
 
@@ -229,6 +224,20 @@ private[compat] sealed trait LowPriority3Json2BsonConverters {
       }
     }
 
+  /**
+   * Provided there is a Play JSON `Reads`, resolve a BSON reader.
+   *
+   * {{{
+   * import play.api.libs.json.Reads
+   * import reactivemongo.api.bson.BSONReader
+   * import reactivemongo.play.json.compat.json2bson.toReader
+   *
+   * def foo[T: Reads]: BSONReader[T] = implicitly[BSONReader[T]]
+   * }}}
+   *
+   * @see [[toDocumentWriterConv]]
+   */
+  implicit final def toReader[T](implicit r: Reads[T], conv: FromValue): BSONReader[T] = toReaderConv(r)
 }
 
 private[compat] sealed trait LowPriority2Bson2JsonConverters {

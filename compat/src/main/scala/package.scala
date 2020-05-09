@@ -18,7 +18,7 @@ import reactivemongo.api.bson.BSONObjectID
  * def foo(v: BSONValue): JsValue = v // ValueConverters.fromValue
  * }}}
  *
- * For more specific imports, see [[ValueConverters]] and [[HandlerConverters]].
+ * For more specific imports, see [[ValueConverters]] and handler converters.
  */
 package object compat extends PackageCompat with ValueConverters {
   @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")

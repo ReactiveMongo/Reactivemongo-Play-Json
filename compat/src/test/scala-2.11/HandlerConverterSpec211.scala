@@ -31,7 +31,7 @@ final class HandlerConverterSpec211 extends org.specs2.mutable.Specification {
       @silent def fooJs = Json.obj("bar" -> "lorem", "v" -> 123456789L)
 
       typecheck("fooJs.validate[FooDateTime]") must failWith(
-        "diverging implicit expansion for type reactivemongo\\.api\\.bson\\.BSONReader\\[reactivemongo\\.HandlerFixtures\\.FooDateTime\\].*starting with method toReader in trait LowPriority2Json2BsonConverters")
+        "diverging implicit expansion for type reactivemongo\\.api\\.bson\\.BSONReader\\[reactivemongo\\.HandlerFixtures\\.FooDateTime\\].*starting with method toReader in trait LowPriority3Json2BsonConverters")
     }
   }
 }
