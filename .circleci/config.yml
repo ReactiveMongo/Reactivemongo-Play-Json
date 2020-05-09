@@ -32,7 +32,7 @@ commands:
     steps:
       - restore_cache:
           keys:
-          - scala-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
+          - scala-{{ .Environment.CIRCLE_JOB }}-{{ .Environment.REACTIVEMONGO_SHADED }}-{{ checksum "version.sbt" }}-{{ checksum "build.sbt" }}-{{ checksum "project/Common.scala" }}
 
       - run:
           name: Build & Run tests
@@ -154,7 +154,7 @@ jobs:
       REACTIVEMONGO_SHADED: false
       RELEASE_SUFFIX: play27
       PLAY_VERSION: 2.7.4
-      SCALA_VERSION: 2.13.1
+      SCALA_VERSION: 2.13.2
     
     steps:
       - checkout
@@ -174,7 +174,7 @@ jobs:
       REACTIVEMONGO_SHADED: false
       RELEASE_SUFFIX: play28
       PLAY_VERSION: 2.8.0
-      SCALA_VERSION: 2.13.1
+      SCALA_VERSION: 2.13.2
     
     steps:
       - checkout
@@ -211,12 +211,12 @@ jobs:
       - publish_snapshots:
           release_suffix: play27
           play_version: 2.7.4
-          scala_versions: 2.11.12 2.12.11 2.13.1
+          scala_versions: 2.11.12 2.12.11 2.13.2
 
       - publish_snapshots:
           release_suffix: play28
           play_version: 2.8.1
-          scala_versions: 2.12.11 2.13.1
+          scala_versions: 2.12.11 2.13.2
 
       - save_cache:
           paths:

@@ -33,7 +33,7 @@ import reactivemongo.api.bson.{
 }
 
 import reactivemongo.play.json.compat.{ JsFalse, JsTrue, dsl }
-import reactivemongo.play.json.compat.ExtendedJsonConverters._
+import reactivemongo.play.json.compat.extended._
 
 import org.specs2.specification.core.Fragment
 

@@ -2,28 +2,15 @@ package reactivemongo.play.json.compat
 
 import scala.language.implicitConversions
 
-import play.api.libs.json.{ JsNull, JsNumber, JsValue, Json }
+import play.api.libs.json.{ JsNumber, JsObject, JsValue }
 
 import reactivemongo.api.bson.{
-  BSONArray,
-  BSONBinary,
-  BSONBoolean,
-  BSONDateTime,
-  BSONDecimal,
-  BSONDocument,
   BSONDouble,
   BSONInteger,
   BSONJavaScript,
-  BSONJavaScriptWS,
   BSONLong,
-  BSONMaxKey,
-  BSONMinKey,
-  BSONNull,
   BSONObjectID,
-  BSONRegex,
-  BSONString,
   BSONSymbol,
-  BSONTimestamp,
   BSONValue
 }
 
@@ -40,7 +27,10 @@ import reactivemongo.api.bson.{
  * but can impact the MongoDB queries (same for date/time values that
  * will be serialized as BSON string, rather than BSON date/time or timestamp).
  */
-object ValueConverters extends ValueConverters {
+object ValueConverters extends ValueConverters { converters =>
+  @inline implicit def fromValue: FromValue = converters
+  @inline implicit def toValue: ToValue = converters
+
   private[compat] val logger =
     org.slf4j.LoggerFactory.getLogger(classOf[ValueConverters])
 }
@@ -63,8 +53,13 @@ object ValueConverters extends ValueConverters {
  *
  * ''Note:'' Logger `reactivemongo.api.play.json.ValueConverters` can be used to debug.
  */
-trait ValueConverters
-  extends SharedValueConverters with LowPriority1Converters {
+trait ValueConverters extends FromToValue with SharedValueConverters
+  with LowPriority1Converters with TemporalObjectConverters {
+
+  final type JsonNumber = JsNumber
+  final type JsonJavaScript = JsObject
+  final type JsonObjectID = JsObject
+  final type JsonSymbol = JsObject
 
   implicit final def fromDouble(bson: BSONDouble): JsNumber =
     JsNumber(bson.value)
@@ -72,41 +67,38 @@ trait ValueConverters
   implicit final def fromInteger(bson: BSONInteger): JsNumber =
     JsNumber(bson.value)
 
+  /**
+   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
+   *
+   * `{ "\$code": "<javascript>" }`
+   */
+  @inline implicit def fromJavaScript(bson: BSONJavaScript): JsObject = jsonJavaScript(bson)
+
   implicit final def fromLong(bson: BSONLong): JsNumber = JsNumber(bson.value)
 
-  implicit final def toJsValueWrapper[T <: BSONValue](value: T): Json.JsValueWrapper = implicitly[JsValue](value)
+  /**
+   * See [[https://github.com/mongodb/specifications/blob/master/source/extended-json.rst syntax]]:
+   *
+   * `{ "\$symbol": "<name>" }`
+   *
+   * @see [[dsl.symbol]]
+   */
+  @inline implicit final def fromSymbol(bson: BSONSymbol): JsObject =
+    dsl.symbol(bson.value)
+
+  /**
+   * See [[https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.ObjectId syntax]]:
+   *
+   * `{ "\$oid": "<ObjectId bytes>" }`
+   *
+   * @see [[dsl.objectID]]
+   */
+  @inline implicit final def fromObjectID(bson: BSONObjectID): JsObject =
+    dsl.objectID(bson)
+
 }
 
-private[json] sealed trait LowPriority1Converters { _: ValueConverters =>
-
-  implicit final def fromValue(bson: BSONValue): JsValue = bson match {
-    case arr: BSONArray => fromArray(arr)
-    case bin: BSONBinary => fromBinary(bin)
-
-    case BSONBoolean(true) => JsTrue
-    case BSONBoolean(_) => JsFalse
-
-    case dt: BSONDateTime => fromDateTime(dt)
-    case dec: BSONDecimal => fromDecimal(dec)
-    case doc: BSONDocument => fromDocument(doc)
-    case d: BSONDouble => fromDouble(d)
-    case i: BSONInteger => fromInteger(i)
-
-    case js: BSONJavaScript => fromJavaScript(js)
-    case jsw: BSONJavaScriptWS => fromJavaScriptWS(jsw)
-
-    case l: BSONLong => fromLong(l)
-
-    case BSONMaxKey => JsMaxKey
-    case BSONMinKey => JsMinKey
-    case BSONNull => JsNull
-
-    case oid: BSONObjectID => fromObjectID(oid)
-    case re: BSONRegex => fromRegex(re)
-    case str: BSONString => fromStr(str)
-    case sym: BSONSymbol => fromSymbol(sym)
-    case ts: BSONTimestamp => fromTimestamp(ts)
-
-    case _ => JsUndefined
-  }
+private[json] sealed trait LowPriority1Converters { self: ValueConverters =>
+  @inline implicit final def fromValue(bson: BSONValue): JsValue =
+    jsonValue(bson)(self)
 }

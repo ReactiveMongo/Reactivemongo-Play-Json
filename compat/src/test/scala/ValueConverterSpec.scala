@@ -43,7 +43,7 @@ final class ValueConverterSpec extends org.specs2.mutable.Specification {
         case JsSuccess(out, _) => out must_=== value
       }
     } and {
-      import _root_.reactivemongo.play.json.compat.HandlerConverters._
+      import _root_.reactivemongo.play.json.compat.json2bson._
 
       val bsonW: BSONDocumentWriter[T] = implicitly[OWrites[T]]
       val bsonR: BSONReader[T] = jsr

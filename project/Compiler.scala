@@ -7,10 +7,18 @@ object Compiler {
 
   lazy val settings = Seq(
     scalaVersion := "2.12.11",
-    crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.1"),
+    crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.2"),
     crossVersion in ThisBuild := CrossVersion.binary,
     unmanagedSourceDirectories in Compile += {
       val base = (sourceDirectory in Compile).value
+
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => base / "scala-2.13+"
+        case _                       => base / "scala-2.13-"
+      }
+    },
+    unmanagedSourceDirectories in Test += {
+      val base = (sourceDirectory in Test).value
 
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 => base / "scala-2.13+"
@@ -29,16 +37,17 @@ object Compiler {
       "-Ywarn-value-discard",
       "-g:vars"
     ),
-    scalacOptions in Compile ++= {
-      if (scalaVersion.value.startsWith("2.13.")) Nil
+    scalacOptions ++= {
+      if (scalaBinaryVersion.value == "2.13") Nil
       else Seq(
+        "-Xmax-classfile-name", "128",
         "-Ywarn-infer-any",
         "-Ywarn-unused",
         "-Ywarn-unused-import"
       )
     },
     scalacOptions in Compile ++= {
-      if (!scalaVersion.value.startsWith("2.11.")) Nil
+      if (scalaVersion.value != "2.11") Nil
       else Seq(
         "-Yconst-opt",
         "-Yclosure-elim",
