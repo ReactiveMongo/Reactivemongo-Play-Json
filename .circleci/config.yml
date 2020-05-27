@@ -104,77 +104,36 @@ commands:
                     fi
 
 jobs:
-  unit_play25:
+  unit_test_suite:
+    description: Unit test suite
+
+    parameters:
+      openjdk_version:
+        type: integer
+        default: 9
+      release_suffix:
+        type: string
+        default: "play28"
+      scala_version:
+        type: string
+        default: "2.13.2"
+      play_version:
+        type: string
+        default: "2.8.1"
+      shaded:
+        type: boolean
+        default: true
+
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:<< parameters.openjdk_version >>-jdk
 
     working_directory: ~/repo
 
     environment:
-      REACTIVEMONGO_SHADED: false
-      RELEASE_SUFFIX: play25
-      PLAY_VERSION: 2.5.11
-      SCALA_VERSION: 2.11.12
-    
-    steps:
-      - checkout
-      - setup_sbt
-      - build_n_tests
-      - collect_test_reports
-      - store_test_results:
-          path: test-reports
-
-  unit_play26:
-    docker:
-      - image: circleci/openjdk:8-jdk
-
-    working_directory: ~/repo
-
-    environment:
-      REACTIVEMONGO_SHADED: false
-      RELEASE_SUFFIX: play26
-      PLAY_VERSION: 2.6.7
-      SCALA_VERSION: 2.12.11
-    
-    steps:
-      - checkout
-      - setup_sbt
-      - build_n_tests
-      - collect_test_reports
-      - store_test_results:
-          path: test-reports
-
-  unit_play27:
-    docker:
-      - image: circleci/openjdk:9-jdk
-
-    working_directory: ~/repo
-
-    environment:
-      REACTIVEMONGO_SHADED: false
-      RELEASE_SUFFIX: play27
-      PLAY_VERSION: 2.7.4
-      SCALA_VERSION: 2.13.2
-    
-    steps:
-      - checkout
-      - setup_sbt
-      - build_n_tests
-      - collect_test_reports
-      - store_test_results:
-          path: test-reports
-
-  unit_play28:
-    docker:
-      - image: circleci/openjdk:9-jdk
-
-    working_directory: ~/repo
-
-    environment:
-      REACTIVEMONGO_SHADED: false
-      RELEASE_SUFFIX: play28
-      PLAY_VERSION: 2.8.0
-      SCALA_VERSION: 2.13.2
+      REACTIVEMONGO_SHADED: << parameters.shaded >>
+      RELEASE_SUFFIX: << parameters.release_suffix >>
+      PLAY_VERSION: << parameters.play_version >>
+      SCALA_VERSION: << parameters.scala_version >>
     
     steps:
       - checkout
@@ -215,7 +174,12 @@ jobs:
 
       - publish_snapshots:
           release_suffix: play28
-          play_version: 2.9.0
+          play_version: 2.8.1
+          scala_versions: 2.12.11 2.13.2
+
+      - publish_snapshots:
+          release_suffix: play29
+          play_version: 2.9.°
           scala_versions: 2.12.11 2.13.2
 
       - save_cache:
@@ -242,10 +206,38 @@ workflows:
 
   main_suite:
     jobs:
-      - unit_play25
-      - unit_play26
-      - unit_play27
-      - unit_play28
+      - unit_test_suite:
+          name: unit_play25
+          release_suffix: play25
+          play_version: 2.5.11
+          scala_version: 2.11.12
+
+      - unit_test_suite:
+          name: unit_play26
+          release_suffix: play26
+          shaded: false
+          openjdk_version: 8
+          scala_version: 2.12.11
+          play_version: 2.6.7
+
+      - unit_test_suite:
+          name: unit_play27
+          release_suffix: play27
+          play_version: 2.7.4
+          scala_version: 2.13.2
+
+      - unit_test_suite:
+          name: unit_play28
+          release_suffix: play28
+          shaded: false
+          play_version: 2.8.1
+          scala_version: 2.13.2
+
+      - unit_test_suite:
+          name: unit_play29
+          release_suffix: play29
+          play_version: 2.9.0
+          scala_version: 2.13.2
 
       - publish_snapshots:
           filters:
