@@ -18,7 +18,7 @@ lazy val `play-json-compat` = project.in(file("compat")).
         map { _ % Provided cross CrossVersion.binary }
     },
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-matcher-extra" % "4.9.4" % Test)))
+      "org.specs2" %% "specs2-matcher-extra" % "4.10.0" % Test)))
 
 lazy val root = (project in file(".")).
   settings(Release.settings ++ Seq(
