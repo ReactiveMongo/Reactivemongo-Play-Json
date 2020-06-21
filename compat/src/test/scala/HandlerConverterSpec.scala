@@ -84,6 +84,18 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
         }
       }
 
+      "convert writer" >> {
+        "for JsValue" in {
+          val w: BSONWriter[JsValue] = implicitly[BSONWriter[JsValue]]
+
+          w.writeTry(JsString("foo")) must beSuccessfulTry(
+            BSONString("foo")) and {
+              w.writeOpt(Json.obj("bar" -> 1)) must beSome(
+                BSONDocument("bar" -> 1))
+            }
+        }
+      }
+
       "convert handler" in {
         object Foo
 

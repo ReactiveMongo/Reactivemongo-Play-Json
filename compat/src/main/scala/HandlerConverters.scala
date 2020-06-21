@@ -203,6 +203,20 @@ private[compat] sealed trait LowPriority3Json2BsonConverters {
   implicit final def toWriterConv[T](w: Writes[T])(implicit conv: ToValue): BSONWriter[T] = BSONWriter[T] { t => conv.toValue(w writes t) }
 
   /**
+   * {{{
+   * import play.api.libs.json.JsValue
+   * import reactivemongo.api.bson.BSONWriter
+   *
+   * // Considering Writes[JsValue] provided by Play JSON,
+   * // with compatibility ...
+   * import reactivemongo.play.json.compat.json2bson._
+   *
+   * def canResolve: BSONWriter[JsValue] = implicitly[BSONWriter[JsValue]]
+   * }}}
+   */
+  implicit final def toWriter[T](implicit w: Writes[T], conv: ToValue): BSONWriter[T] = toWriterConv[T](w)(conv)
+
+  /**
    *
    * Raises a `JsError` is the JSON value is not a `JsObject`.
    *
