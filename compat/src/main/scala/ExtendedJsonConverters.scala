@@ -42,7 +42,7 @@ private[json] trait ExtendedJsonConverters
    * - For finite numbers: `{ "\$numberDouble": "<decimal string>" }`
    * - For other numbers: `{ "\$numberDouble": <"Infinity"|"-Infinity"|"NaN"> }`
    *
-   * @see [[dsl.double]]
+   * @see `dsl.double`
    */
   implicit final def fromDouble(bson: BSONDouble): JsObject =
     dsl.double(bson.value)
@@ -52,7 +52,7 @@ private[json] trait ExtendedJsonConverters
    *
    * `{ "\$numberInt": "<number>" }`
    *
-   * @see [[dsl.int]]
+   * @see `dsl.int`
    */
   implicit final def fromInteger(bson: BSONInteger): JsObject =
     dsl.int(bson.value)
@@ -69,7 +69,7 @@ private[json] trait ExtendedJsonConverters
    *
    * `{ "\$numberLong": "<number>" }`
    *
-   * @see [[dsl.long]]
+   * @see `dsl.long`
    */
   implicit final def fromLong(bson: BSONLong): JsObject =
     dsl.long(bson.value)
@@ -79,7 +79,7 @@ private[json] trait ExtendedJsonConverters
    *
    * `{ "\$oid": "<ObjectId bytes>" }`
    *
-   * @see [[dsl.objectID]]
+   * @see `dsl.objectID`
    */
   implicit final def fromObjectID(bson: BSONObjectID): JsObject =
     dsl.objectID(bson)
@@ -89,7 +89,7 @@ private[json] trait ExtendedJsonConverters
    *
    * `{ "\$symbol": "<name>" }`
    *
-   * @see [[dsl.symbol]]
+   * @see `dsl.symbol`
    */
   @inline implicit final def fromSymbol(bson: BSONSymbol): JsObject =
     dsl.symbol(bson.value)

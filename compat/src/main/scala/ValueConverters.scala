@@ -81,7 +81,7 @@ trait ValueConverters extends FromToValue with SharedValueConverters
    *
    * `{ "\$symbol": "<name>" }`
    *
-   * @see [[dsl.symbol]]
+   * @see `dsl.symbol`
    */
   @inline implicit final def fromSymbol(bson: BSONSymbol): JsObject =
     dsl.symbol(bson.value)
@@ -91,7 +91,7 @@ trait ValueConverters extends FromToValue with SharedValueConverters
    *
    * `{ "\$oid": "<ObjectId bytes>" }`
    *
-   * @see [[dsl.objectID]]
+   * @see `dsl.objectID`
    */
   @inline implicit final def fromObjectID(bson: BSONObjectID): JsObject =
     dsl.objectID(bson)
