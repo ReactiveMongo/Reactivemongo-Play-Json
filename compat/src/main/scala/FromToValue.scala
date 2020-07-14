@@ -50,8 +50,8 @@ sealed trait FromValue {
 
   def fromLong(bson: BSONLong): JsonNumber
 
-  implicit final def fromArray(bson: BSONArray): JsArray =
-    JsArray(bson.values.map(fromValue))
+  implicit final def fromArray(arr: BSONArray): JsArray =
+    JsArray(arr.values.map(fromValue))
 
   def fromBinary(bin: BSONBinary): JsObject
 
@@ -174,8 +174,8 @@ object FromValue {
 sealed trait ToValue {
   implicit final def toJsValueWrapper[T <: BSONValue](value: T): Json.JsValueWrapper = implicitly[Json.JsValueWrapper](fromValue(value))
 
-  implicit final def toArray(js: JsArray): BSONArray =
-    BSONArray(js.value.map(toValue))
+  implicit final def toArray(arr: JsArray): BSONArray =
+    BSONArray(arr.value.map(toValue))
 
   implicit final def toBoolean(js: JsBoolean): BSONBoolean =
     BSONBoolean(js.value)
@@ -191,6 +191,7 @@ sealed trait ToValue {
 
   implicit final val toNull: JsNull.type => BSONNull = _ => BSONNull
 
+  @SuppressWarnings(Array("NullParameter"))
   implicit final def toStr(js: JsString): BSONValue = {
     if (js.value == null) BSONNull
     else BSONString(js.value)

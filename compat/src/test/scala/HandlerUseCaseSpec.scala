@@ -76,8 +76,6 @@ final class HandlerUseCaseSpec extends org.specs2.mutable.Specification {
           val userLaxJs = Json.toJson(user) // via fromDocumentWriter
 
           userLaxJs must_=== jsn and {
-            // TODO: JsError
-
             userLaxJs.validate[User] must beLike[JsResult[User]] {
               case JsError((JsPath, JsonValidationError(
                 "Fails to handle _id: BSONString != BSONObjectID" ::

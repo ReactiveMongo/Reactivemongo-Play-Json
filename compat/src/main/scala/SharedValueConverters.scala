@@ -161,7 +161,7 @@ private[json] trait SharedValueConverters
   private[json] object JavaScriptWSObject {
     def unapply(obj: JsObject): Option[BSONJavaScriptWS] = for {
       scope <- (obj \ f"$$scope").toOption.collect {
-        case obj @ JsObject(_) => toDocument(obj)
+        case o @ JsObject(_) => toDocument(o)
       }
       code <- (obj \ f"$$code").asOpt[String]
     } yield BSONJavaScriptWS(code, scope)
@@ -173,7 +173,7 @@ private[json] trait SharedValueConverters
   private[json] object BinaryObject {
     def unapply(obj: JsObject): Option[BSONBinary] = for {
       bin <- (obj \ f"$$binary").toOption.collect {
-        case obj @ JsObject(_) => obj
+        case o @ JsObject(_) => o
       }
       hexaValue <- (bin \ "base64").asOpt[String]
 
@@ -193,7 +193,7 @@ private[json] trait SharedValueConverters
         Some(base64Dec decode hexaValue)
       } catch {
         case NonFatal(cause) =>
-          logger.debug(s"Invalid Binary 'base64' value; https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Binary", cause)
+          logger.debug("Invalid Binary 'base64' value; https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Binary", cause)
 
           None
       }
@@ -236,7 +236,7 @@ private[json] trait SharedValueConverters
           case Success(v) => Some(v)
 
           case Failure(cause) => {
-            logger.debug(s"Invalid JSON Decimal; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Decimal128", cause)
+            logger.debug("Invalid JSON Decimal; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Decimal128", cause)
 
             None
           }
@@ -259,7 +259,7 @@ private[json] trait SharedValueConverters
           Some(BSONDouble(repr.toDouble))
         } catch {
           case NonFatal(cause) =>
-            logger.debug(s"Invalid JSON Double; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Double", cause)
+            logger.debug("Invalid JSON Double; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Double", cause)
 
             None
         }
@@ -277,7 +277,7 @@ private[json] trait SharedValueConverters
           Some(BSONInteger(repr.toInt))
         } catch {
           case NonFatal(cause) =>
-            logger.debug(s"Invalid JSON Int32; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Int32", cause)
+            logger.debug("Invalid JSON Int32; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Int32", cause)
 
             None
         }
@@ -295,7 +295,7 @@ private[json] trait SharedValueConverters
           Some(BSONLong(repr.toLong))
         } catch {
           case NonFatal(cause) =>
-            logger.debug(s"Invalid JSON Int64; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Int64", cause)
+            logger.debug("Invalid JSON Int64; See https://docs.mongodb.com/manual/reference/mongodb-extended-json/#bson.Int64", cause)
 
             None
         }

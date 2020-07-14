@@ -95,7 +95,7 @@ package object dsl {
    * }}}
    */
   @inline def symbol(name: String): JsObject =
-    JsObject(Map[String, JsValue](f"$$symbol" -> JsString(name.toString)))
+    JsObject(Map[String, JsValue](f"$$symbol" -> JsString(name)))
 
   /**
    * Represents a object ID using [[https://docs.mongodb.com/manual/reference/mongodb-extended-json MongoDB Extended JSON]] syntax (v2).
