@@ -53,7 +53,14 @@ final class HandlerUseCaseSpec extends org.specs2.mutable.Specification {
           val userJs = Json.toJson(user)
 
           userJs must_=== jsn and {
-            userJs.validate[User] must_=== JsSuccess(user)
+            // resolved from User.bsonReader
+            val jsonReader: Reads[User] = implicitly[Reads[User]]
+
+            userJs.validate[User](jsonReader) must_=== JsSuccess(user)
+          } and {
+            val jsonWriter: OWrites[User] = implicitly[OWrites[User]]
+
+            Json.toJson(user)(jsonWriter) must_=== userJs
           }
         }
       }
@@ -89,7 +96,49 @@ final class HandlerUseCaseSpec extends org.specs2.mutable.Specification {
             implicit val bsonReader: BSONDocumentReader[User] =
               Macros.reader[User]
 
-            userLaxJs.validate[User] must_=== JsSuccess(user)
+            // Resolved from bsonReader
+            val jsonReader: Reads[User] = implicitly[Reads[User]]
+
+            userLaxJs.validate[User](jsonReader) must_=== JsSuccess(user)
+          } and {
+            // Overrides BSONWriters for OID/Timestamp/DateTime
+            // so that the BSON representation matches the JSON lax one
+            implicit val bsonWriter: BSONDocumentWriter[User] =
+              Macros.writer[User]
+
+            // Resolved from bsonWriter
+            val jsonWriter: OWrites[User] = implicitly[OWrites[User]]
+
+            Json.toJson(user)(jsonWriter) must_=== userLaxJs
+          }
+        }
+      }
+    }
+
+    "be represented in BSON using 'json2bson' conversions" >> {
+      import HandlerUseCaseSpec.Street
+      import json2bson._
+
+      {
+        val doc = BSONDocument(
+          "number" -> 1,
+          "name" -> "rue de la lune")
+
+        val street = Street(Some(1), "rue de la lune")
+
+        s"with JSON syntax '${doc}'" in {
+          implicit val jsonFormat: OFormat[Street] = Json.format[Street]
+
+          {
+            // Resolved from jsonFormat
+            val bsonWriter = implicitly[BSONDocumentWriter[Street]]
+
+            bsonWriter.writeTry(street) must beSuccessfulTry(doc)
+          } and {
+            // Resolved from jsonFormat
+            val bsonReader = implicitly[BSONDocumentReader[Street]]
+
+            bsonReader.readTry(doc) must beSuccessfulTry(street)
           }
         }
       }
@@ -116,4 +165,8 @@ object HandlerUseCaseSpec {
 
     implicit val bsonReader: BSONDocumentReader[User] = Macros.reader[User]
   }
+
+  case class Street(
+    number: Option[Int],
+    name: String)
 }
