@@ -15,7 +15,7 @@ object Common extends AutoPlugin {
 
   private val silencerVer = Def.setting[String] {
     if (scalaBinaryVersion.value == "2.11") "1.4.4"
-    else "1.6.0"
+    else "1.7.0"
   }
 
   val playVersion = settingKey[String]("Play version")

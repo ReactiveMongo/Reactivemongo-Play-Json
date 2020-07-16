@@ -16,7 +16,12 @@ git diff --exit-code || (
 
 TEST_OPTS="exclude mongo2"
 
-TEST_CMD=";error ;test:compile ;scapegoat ;mimaReportBinaryIssues"
+TEST_CMD=";error ;test:compile ;mimaReportBinaryIssues"
+
+if [ "v$SCALA_VERSION" = "v2.12.11" ]; then
+  TEST_CMD="$TEST_CMD ;scapegoat"
+fi
+
 TEST_CMD="$TEST_CMD ;info ;testQuick * -- $TEST_OPTS"
 
 sbt ++$SCALA_VERSION "$TEST_CMD"
