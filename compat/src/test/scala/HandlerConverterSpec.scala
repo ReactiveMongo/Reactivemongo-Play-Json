@@ -381,7 +381,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
                 fromReader[FooDateTime](Macros.reader[FooDateTime], lax).
                   reads(fooJs) must beLike[JsResult[FooDateTime]] {
                     case JsError((JsPath, JsonValidationError(
-                      "Fails to handle v: BSONLong != BSONDateTime" ::
+                      "Fails to handle 'v': BSONLong != BSONDateTime" ::
                         Nil) :: Nil) :: Nil) => ok
                   }
               } and {
@@ -481,7 +481,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
                 fromReader[FooJavaScript](Macros.reader[FooJavaScript], lax).
                   reads(fooJs) must beLike[JsResult[FooJavaScript]] {
                     case JsError((JsPath, JsonValidationError(
-                      "Fails to handle v: BSONString != BSONJavaScript" ::
+                      "Fails to handle 'v': BSONString != BSONJavaScript" ::
                         Nil) :: Nil) :: Nil) => ok
                   }
               } and {
@@ -581,7 +581,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
                 fromReader[FooObjectID](Macros.reader[FooObjectID], lax).
                   reads(fooJs) must beLike[JsResult[FooObjectID]] {
                     case JsError((JsPath, JsonValidationError(
-                      "Fails to handle v: BSONString != BSONObjectID" ::
+                      "Fails to handle 'v': BSONString != BSONObjectID" ::
                         Nil) :: Nil) :: Nil) => ok
                   }
               } and {
@@ -682,7 +682,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
                 fromReader[FooSymbol](Macros.reader[FooSymbol], lax).
                   reads(fooJs) must beLike[JsResult[FooSymbol]] {
                     case JsError((JsPath, JsonValidationError(
-                      "Fails to handle v: BSONString != BSONSymbol" ::
+                      "Fails to handle 'v': BSONString != BSONSymbol" ::
                         Nil) :: Nil) :: Nil) => ok
                   }
               } and {
@@ -783,7 +783,7 @@ final class HandlerConverterSpec extends org.specs2.mutable.Specification {
                 fromReader[FooTimestamp](Macros.reader[FooTimestamp], lax).
                   reads(fooJs) must beLike[JsResult[FooTimestamp]] {
                     case JsError((JsPath, JsonValidationError(
-                      "Fails to handle v: BSONLong != BSONTimestamp" ::
+                      "Fails to handle 'v': BSONLong != BSONTimestamp" ::
                         Nil) :: Nil) :: Nil) => ok
                   }
               } and {
