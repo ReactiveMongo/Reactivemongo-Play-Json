@@ -13,10 +13,7 @@ object Common extends AutoPlugin {
 
   val previousVersion = "0.12.1"
 
-  private val silencerVer = Def.setting[String] {
-    if (scalaBinaryVersion.value == "2.11") "1.7.1"
-    else "1.7.0"
-  }
+  private val silencerVer = Def.setting[String]("1.7.1")
 
   val playVersion = settingKey[String]("Play version")
   val playDirs = settingKey[Seq[String]]("Play source directory")
