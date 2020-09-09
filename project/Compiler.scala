@@ -3,10 +3,10 @@ import sbt._
 
 object Compiler {
   val playLower = "2.5.0"
-  val playUpper = "2.9.0"
+  val playUpper = "2.9.1"
 
   lazy val settings = Seq(
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.12.12",
     crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.3"),
     crossVersion in ThisBuild := CrossVersion.binary,
     unmanagedSourceDirectories in Compile += {
