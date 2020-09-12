@@ -1,7 +1,5 @@
 package reactivemongo.play.json
 
-import play.api.libs.json.{ JsObject, OWrites }
-
 /**
  * Implicit conversions for handler & value types between
  * `play.api.libs.json` and `reactivemongo.api.bson`,
@@ -18,10 +16,8 @@ import play.api.libs.json.{ JsObject, OWrites }
  *
  * For more specific imports, see [[ValueConverters]] and handler converters.
  */
-package object compat extends PackageCompat with ValueConverters {
-  @deprecated("Will be removed when provided by Play-JSON itself", "0.20.6")
-  implicit final val jsObjectWrites: OWrites[JsObject] =
-    OWrites[JsObject](identity)
+package object compat extends PackageCompat
+  with ValueConverters with LowPriorityPackageCompat {
 
   override def toString = "compat"
 

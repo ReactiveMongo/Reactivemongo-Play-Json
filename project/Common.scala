@@ -64,9 +64,10 @@ object Common extends AutoPlugin {
     playDirs := {
       val v = playVersion.value
 
-      if (v startsWith "2.5") Seq("play-2.5-", "play-2.7-")
-      else if (v startsWith "2.6") Seq("play-2.6+", "play-2.7-")
-      else Seq("play-2.6+", "play-2.7+")
+      if (v startsWith "2.5") Seq("play-2.5-", "play-2.7-", "play-2.9-")
+      else if (v startsWith "2.6") Seq("play-2.6+", "play-2.7-", "play-2.9-")
+      else if (v startsWith "2.9") Seq("play-2.6+", "play-2.7+", "play-2.9+")
+      else Seq("play-2.6+", "play-2.7+", "play-2.9-")
     },
     unmanagedSourceDirectories in Compile ++= playDirs.value.map { dir =>
       (sourceDirectory in Compile).value / dir
