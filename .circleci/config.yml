@@ -185,7 +185,7 @@ jobs:
 
       - publish_snapshots:
           release_suffix: play29
-          play_version: 2.9.1
+          play_version: 2.9.2
           scala_versions: 2.12.12 2.13.3
 
       - save_cache:
@@ -242,7 +242,7 @@ workflows:
       - unit_test_suite:
           name: unit_play29
           release_suffix: play29
-          play_version: 2.9.1
+          play_version: 2.9.2
           scala_version: 2.13.3
 
       - publish_snapshots:
