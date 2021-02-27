@@ -18,7 +18,7 @@ TEST_OPTS="exclude mongo2"
 
 TEST_CMD=";error ;test:compile ;mimaReportBinaryIssues"
 
-if [ "v$SCALA_VERSION" = "v2.12.12" ]; then
+if [ "v$SCALA_VERSION" = "v2.12.13" ]; then
   TEST_CMD="$TEST_CMD ;scapegoat"
 fi
 
