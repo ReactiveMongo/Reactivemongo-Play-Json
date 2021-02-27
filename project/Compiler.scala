@@ -7,7 +7,7 @@ object Compiler {
 
   lazy val settings = Seq(
     scalaVersion := "2.12.12",
-    crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.4"),
+    crossScalaVersions := Seq("2.13.5", scalaVersion.value, "2.13.4"),
     crossVersion in ThisBuild := CrossVersion.binary,
     unmanagedSourceDirectories in Compile += {
       val base = (sourceDirectory in Compile).value
