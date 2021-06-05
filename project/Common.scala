@@ -14,7 +14,7 @@ object Common extends AutoPlugin {
   val previousVersion = "0.12.1"
 
   private val silencerVer = Def.setting[String] {
-    "1.7.4"
+    "1.7.5"
   }
 
   val playVersion = settingKey[String]("Play version")
